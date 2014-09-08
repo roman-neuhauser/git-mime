@@ -1,0 +1,25 @@
+# Maintainer: Roman Neuhauser <neuhauser+git-mime@sigpipe.cz>
+pkgname=git-mime
+pkgver=__VERSION__
+pkgrel=1
+pkgdesc="Prepare patches for email submission"
+arch=(any)
+url="https://github.com/roman-neuhauser/$pkgname"
+license=(MIT)
+depends=(git zsh)
+source=($pkgname-$pkgver.tar.gz)
+sha1sums=(SKIP)
+
+build() {
+  _make
+}
+
+package() {
+  _make install DESTDIR="$pkgdir"
+}
+
+_make() {
+  cd "$srcdir/$pkgname-$pkgver"
+  make "$@"
+}
+

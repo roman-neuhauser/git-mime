@@ -1,0 +1,61 @@
+.. vim: ft=rst sts=2 sw=2 tw=77
+
+.. :Author: Roman Neuhauser
+.. :Contact: neuhauser+git-mime.cz@sigpipe.cz
+.. :Copyright: This document is in the public domain.
+
+.. this file is marked up using reStructuredText
+   lines beginning with ".." are reST directives
+   "foo_" or "`foo bar`_" is a link, defined at ".. _foo" or ".. _foo bar"
+   "::" introduces a literal block (usually some form of code)
+   "`foo`" is some kind of identifier
+   suspicious backslashes in the text ("`std::string`\s") are required for
+   reST to recognize the preceding character as syntax
+
+.. default-role:: strong
+.. parsed-literal::
+
+  `NAME`
+       `git-mime` — Prepare patches for email submission
+
+
+  `SYNOPSIS`
+       `git-mime` [options] [--] <REV>
+
+  `DESCRIPTION`
+       `git-mime` formats a commit identified by `REV` as a MIME message.
+
+    Options
+       `--output=FILE`
+          Place the output in *FILE* instead of default *stdout*.
+
+       `--dirstat`, `--numstat`, `--shortstat`, `--stat`, `--no-stat`
+          See *git-show(1)*, with the caveat that these options are mutually
+          exclusive in `git-mime` (at most one kind of diffstat is output),
+          and `--no-stat` disables all kinds of diffstat.
+          Last option specified wins.
+
+       `--summary`, `--no-summary`
+          Output a summary of filemode changes such as creations, deletions,
+          renames and mode changes.  Last option specified wins.
+
+  `ENVIRONMENT`
+       `git-mime` itself does not use any environment variables.
+       It is, however, implemented in terms of third-party commands
+       which do use them.  This means `git-mime` may be influenced by
+       environment variables used by *git(1)*, *zsh(1)*, possibly others.
+
+  `DIAGNOSTICS`
+       The `git-mime` utility exits 0 on success, and >0 if an error occurs.
+
+  `SEE ALSO`
+       *git-format-patch(1)*, *hg(1)*, *mime-construct(1)*.
+
+  `AUTHORS`
+       Roman Neuhauser <neuhauser+git-mime@sigpipe.cz>
+           https://github.com/roman-neuhauser/git-mime
+
+  `BUGS`
+       No doubt plentiful.  Please report them at
+           https://github.com/roman-neuhauser/git-mime/issues
+

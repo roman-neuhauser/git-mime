@@ -1,0 +1,95 @@
+.\" This document is in the public domain.
+.\" vim: fdm=marker
+.
+.\" FRONT MATTER {{{
+.Dd Aug 26, 2014
+.Os
+.Dt GIT-EXPORT 1
+.
+.Sh NAME
+.Nm git-mime
+.Nd Prepare patches for email submission
+.\" FRONT MATTER }}}
+.
+.\" SYNOPSIS {{{
+.Sh SYNOPSIS
+.Nm
+.Op options
+.Op --
+.Ar REV
+.\" SYNOPSIS }}}
+.
+.\" DESCRIPTION {{{
+.Sh DESCRIPTION
+.Nm
+formats a commit identified by
+.Ar REV
+as a MIME message.
+.\"
+.Ss Options
+.Bl -tag -width "xxx"
+.It Fl -output Ns = Ns Ar FILE
+Place the output in
+.Ar FILE
+instead of default
+.Dv stdout .
+.It Fl -dirstat , Fl -numstat , Fl -shortstat , Fl -stat , Fl -no-stat
+See
+.Xr git-show 1 ,
+with the caveat that these options are mutually exclusive in
+.Nm
+(at most one kind of diffstat is output), and
+.Fl -no-stat
+disables all kinds of diffstat.
+Last option specified wins.
+.It Fl -summary , Fl -no-summary
+Output a summary of filemode changes such as creations, deletions,
+renames and mode changes.
+Last option specified wins.
+.El
+.\" DESCRIPTION }}}
+.\" ENVIRONMENT {{{
+.Sh ENVIRONMENT
+.Nm
+itself does not use any environment variables.
+It is, however, implemented in terms of third-party commands
+which
+.Em do
+use them.
+This means
+.Nm
+may be influenced by environment variables used by
+.Xr git 1  ,
+.Xr zsh 1 ,
+possibly others.
+.\" ENVIRONMENT }}}
+.\" EXAMPLES {{{
+.\"Sh EXAMPLES
+.\" EXAMPLES }}}
+.\" DIAGNOSTICS {{{
+.Sh DIAGNOSTICS
+.Ex -std
+.\" DIAGNOSTICS }}}
+.\" SEE ALSO {{{
+.Sh SEE ALSO
+.Bl
+.It
+.Xr git-format-patch 1 ,
+.Xr git-send-email 1 ,
+.Xr sendmail 1 ,
+.Xr sendmail 8 .
+.El
+.\" SEE ALSO }}}
+.\" .Sh STANDARDS
+.\" .Sh HISTORY
+.\" AUTHORS {{{
+.Sh AUTHORS
+.An Roman Neuhauser Aq Mt neuhauser+git-mime@sigpipe.cz
+.Lk https://github.com/roman-neuhauser/git-mime
+.\" AUTHORS }}}
+.\" BUGS {{{
+.Sh BUGS
+No doubt plentiful.
+Please report them at
+.Lk https://github.com/roman-neuhauser/git-mime/issues
+.\" BUGS }}}

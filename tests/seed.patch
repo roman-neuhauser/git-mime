@@ -1,0 +1,4874 @@
+From 69d83e67f523fac0ddbf736457f17b52ea12b45c Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Wed, 18 Jul 2012 12:22:18 +0200
+Subject: [PATCH 01/26] basic .gitignore
+
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..18448a0
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,3 @@
++.*.sw?
++.sw?
++README.html
+
+From dd89f1a84606c297a3e530c0f9f1cc3070a2232b Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Wed, 18 Jul 2012 17:08:55 +0200
+Subject: [PATCH 02/26] .gitignore += node_modules/
+
+
+diff --git a/.gitignore b/.gitignore
+index 18448a0..e5d0ecb 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,3 +1,4 @@
+ .*.sw?
+ .sw?
+ README.html
++node_modules/
+
+From 9722f71032ae7a949d8d1a7dcd3e9b0e4a93b155 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Wed, 18 Jul 2012 12:26:00 +0200
+Subject: [PATCH 03/26] scaffolding: rudimentary package.json for npm,
+ GNUmakefile
+
+
+diff --git a/GNUmakefile b/GNUmakefile
+new file mode 100644
+index 0000000..6670c3a
+--- /dev/null
++++ b/GNUmakefile
+@@ -0,0 +1,4 @@
++check:
++	mocha --compilers coffee:coffee-script tests
++
++.PHONY: check
+diff --git a/package.json b/package.json
+new file mode 100644
+index 0000000..232b328
+--- /dev/null
++++ b/package.json
+@@ -0,0 +1,26 @@
++{
++  "author": "Roman Neuhauser <rneuhauser@suse.cz>"
++, "name": "studio_napi"
++, "private": true
++, "description": "SUSE Studio API for Node.js"
++, "version": "0.0.0"
++, "homepage": "https://github.com/roman-neuhauser/studio_napi"
++, "repository": {
++    "type": "git"
++  , "url": "git@github.com/roman-neuhauser/studio_napi.git"
++  }
++, "scripts": {
++    "test": "make check"
++  }
++, "dependencies": {
++    "coffee-script": "~1.3"
++  }
++, "devDependencies": {
++    "chai": "~1.1"
++  , "mocha": "~1.3"
++  }
++, "optionalDependencies": {}
++, "engines": {
++    "node": "~0.6"
++  }
++}
+
+From 188690959f5148a58c9a5061da4197161f15502e Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Wed, 18 Jul 2012 17:11:32 +0200
+Subject: [PATCH 04/26] unit tests for the Admin part of SUSE Studio API
+
+the implementation (lib/admin.coffee) is as phony as it gets:
+it's just the examples from http://susestudio.com/help/api_admin/v2.
+
+package.json defines "main", "files" fields.
+
+diff --git a/lib/admin.coffee b/lib/admin.coffee
+new file mode 100644
+index 0000000..c74f7bb
+--- /dev/null
++++ b/lib/admin.coffee
+@@ -0,0 +1,91 @@
++exports.api = (method, args..., done) ->
++  data =
++    about:
++      server_name: 'kerogen.suse.de:3000'
++      environment: 'development'
++      git_revision: '074b2a42d48c7b8256c1b9328a7b29a944aeb8c7'
++
++    active_users:
++      since: 86400
++      users: []
++
++    health_check:
++      state: 'error'
++      mysql: 'ok'
++      thoth: 'ok'
++      rmds: 'ok'
++      kiwi_runners: [
++        {
++          id: 1
++          address: 'localhost:3001'
++          status: 'pinged'
++          last_pinged: '2009-07-16 09:27:32 UTC'
++          slots: 1
++          used_slots: 0
++          load: '2.68'
++        }
++      ]
++      testdrive_runners: [
++        {
++          id: 2
++          address: 'localhost:3002'
++          status: 'unreachable'
++          last_pinged: '2009-06-25 14:21:02 UTC'
++          slots: 8
++          used_slots: 0
++          load: '0.34'
++        }
++      ]
++      disks: [
++        {
++          path: '/'
++          used: '61%'
++          available: '7999651840'
++        }
++        {
++          path: '/dev'
++          used: '1%'
++          available: '1038233600'
++        }
++      ]
++
++    job_history:
++      since: 86400
++      builds:
++        succeeded: 0
++        failed: 0
++        successrate: 0
++      testdrives: 0
++
++    summary:
++      since: 86400
++      last_bug_status_refresh_time: undefined
++      unassigned_failures_count: 10
++      builds:
++        succeeded: 0
++        failed: 0
++        errored: 0
++        successrate: 0
++      testdrives: 0
++      active_users: []
++      disks: [
++        {
++          filesystem: '/dev/sda7'
++          total: '121449922560'
++          used: '104339582976'
++          used_percentage: '91%'
++          available: '10940973056'
++          mount_point: '/build'
++        }
++      ]
++      bugs: []
++
++    running_jobs:
++      builds: []
++      testdrives: []
++
++  if data[method] is undefined
++    done "#{method}: unknown method"
++  else
++    done undefined, data[method]
++
+diff --git a/lib/index.coffee b/lib/index.coffee
+new file mode 100644
+index 0000000..b237cc3
+--- /dev/null
++++ b/lib/index.coffee
+@@ -0,0 +1 @@
++exports.admin = (require './admin').api
+diff --git a/package.json b/package.json
+index 232b328..516145e 100644
+--- a/package.json
++++ b/package.json
+@@ -9,6 +9,13 @@
+     "type": "git"
+   , "url": "git@github.com/roman-neuhauser/studio_napi.git"
+   }
++, "main": "lib/index.coffee"
++, "files": [
++    "GNUmakefile"
++  , "lib/admin.coffee"
++  , "lib/index.coffee"
++  , "tests/200-admin.coffee"
++  ]
+ , "scripts": {
+     "test": "make check"
+   }
+@@ -21,6 +28,6 @@
+   }
+ , "optionalDependencies": {}
+ , "engines": {
+-    "node": "~0.6"
++    "node": ">0.5 <0.9"
+   }
+ }
+diff --git a/tests/200-admin.coffee b/tests/200-admin.coffee
+new file mode 100644
+index 0000000..d09606c
+--- /dev/null
++++ b/tests/200-admin.coffee
+@@ -0,0 +1,136 @@
++expect = (require 'chai').expect
++#sinon = (require 'sinon')
++anapi = (require '../lib/admin').api
++
++# FIXME: does not handle arrays well
++contains = (actual, expected) ->
++  for p, v of expected
++    if v instanceof Object
++      contains actual[p], v
++    else
++      (expect actual[p], p).to.equal v
++
++no_error = (err) ->
++  (expect err, 'err').to.equal undefined
++
++describe 'Admin API', ->
++
++  describe 'about', ->
++    it 'should give hostname, RoR env, git commitish', (done) ->
++      anapi 'about', (err, r) ->
++        no_error err
++        contains r, {
++          server_name: 'kerogen.suse.de:3000'
++          environment: 'development'
++          git_revision: '074b2a42d48c7b8256c1b9328a7b29a944aeb8c7'
++        }
++        done()
++
++  describe 'active_users', ->
++    it 'should give build/testdrive data', (done) ->
++      anapi 'active_users', (err, r) ->
++        no_error err
++        contains r, {
++          since: 86400
++          users: []
++        }
++        done()
++
++  describe 'job_history', ->
++    it 'should give build/testdrive stats', (done) ->
++      anapi 'job_history', (err, r) ->
++        no_error err
++        contains r, {
++          since: 86400
++          builds:
++            succeeded: 0
++            failed: 0
++            successrate: 0
++          testdrives: 0
++        }
++        done()
++
++  describe 'running_jobs', ->
++    it 'should give build/testdrive data', (done) ->
++      anapi 'running_jobs', (err, r) ->
++        no_error err
++        contains r, {
++          builds: []
++          testdrives: []
++        }
++        done()
++
++  describe 'summary', ->
++    it 'should give uptime, build/testdrive/user/bug stats, df, etc', (done) ->
++      anapi 'summary', (err, r) ->
++        no_error err
++        contains r, {
++          since: 86400
++          last_bug_status_refresh_time: undefined
++          unassigned_failures_count: 10
++          builds:
++            succeeded: 0
++            failed: 0
++            errored: 0
++            successrate: 0
++          testdrives: 0
++          active_users: []
++          disks: [
++            {
++              filesystem: '/dev/sda7'
++              total: '121449922560'
++              used: '104339582976'
++              used_percentage: '91%'
++              available: '10940973056'
++              mount_point: '/build'
++            }
++          ]
++          bugs: []
++        }
++        done()
++
++  describe 'health_check', ->
++    it 'should give crap', (done) ->
++      anapi 'health_check', (err, r) ->
++        no_error err
++        contains r, {
++          state: 'error'
++          mysql: 'ok'
++          thoth: 'ok'
++          rmds: 'ok'
++          kiwi_runners: [
++            {
++              id: 1
++              address: 'localhost:3001'
++              status: 'pinged'
++              last_pinged: '2009-07-16 09:27:32 UTC'
++              slots: 1
++              used_slots: 0
++              load: '2.68'
++            }
++          ]
++          testdrive_runners: [
++            {
++              id: 2
++              address: 'localhost:3002'
++              status: 'unreachable'
++              last_pinged: '2009-06-25 14:21:02 UTC'
++              slots: 8
++              used_slots: 0
++              load: '0.34'
++            }
++          ]
++          disks: [
++            {
++              path: '/'
++              used: '61%'
++              available: '7999651840'
++            }
++            {
++              path: '/dev'
++              used: '1%'
++              available: '1038233600'
++            }
++          ]
++        }
++        done()
+
+From 268b96c4d0910ecc2bc21e3bb0d961d002505986 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Wed, 18 Jul 2012 17:38:57 +0200
+Subject: [PATCH 05/26] xml fixtures for the Admin API
+
+ui-server/doc/api/v2/admin/*.xml from studio (example files).
+
+diff --git a/tests/admin/about.xml b/tests/admin/about.xml
+new file mode 100644
+index 0000000..9838b53
+--- /dev/null
++++ b/tests/admin/about.xml
+@@ -0,0 +1,5 @@
++<about>
++  <server_name>kerogen.suse.de:3000</server_name>
++  <environment>development</environment>
++  <git_revision>074b2a42d48c7b8256c1b9328a7b29a944aeb8c7</git_revision>
++</about>
+\ No newline at end of file
+diff --git a/tests/admin/active_users.xml b/tests/admin/active_users.xml
+new file mode 100644
+index 0000000..484a356
+--- /dev/null
++++ b/tests/admin/active_users.xml
+@@ -0,0 +1,5 @@
++<active_users>
++  <since scale="seconds">86400</since>
++  <users type="array">
++  </users>
++</active_users>
+\ No newline at end of file
+diff --git a/tests/admin/health_check.xml b/tests/admin/health_check.xml
+new file mode 100644
+index 0000000..44a102a
+--- /dev/null
++++ b/tests/admin/health_check.xml
+@@ -0,0 +1,39 @@
++<health_check>
++  <state>error</state>
++  <mysql>ok</mysql>
++  <thoth>ok</thoth>
++  <rmds>ok</rmds>
++  <kiwi_runners>
++    <kiwi_runner>
++      <id>1</id>
++      <address>localhost:3001</address>
++      <status>pinged</status>
++      <last_pinged>2009-07-16 09:27:32 UTC</last_pinged>
++      <slots>1</slots>
++      <used_slots>0</used_slots>
++      <load>2.68</load>
++    </kiwi_runner>
++  </kiwi_runners>
++  <testdrive_runners>
++    <testdrive_runner>
++      <id>2</id>
++      <address>localhost:3002</address>
++      <status>unreachable</status>
++      <last_pinged>2009-06-25 14:21:02 UTC</last_pinged>
++      <slots>8</slots>
++      <used_slots>0</used_slots>
++      <load>0.34</load>
++    </testdrive_runner>
++  </testdrive_runners>
++  <disks>
++    <disk path="/">
++      <used>61%</used>
++      <available>7999651840</available>
++    </disk>
++    <disk path="/dev">
++      <used>1%</used>
++      <available>1038233600</available>
++    </disk>
++  </disks>
++</health_check>
++
+diff --git a/tests/admin/job_history.xml b/tests/admin/job_history.xml
+new file mode 100644
+index 0000000..33c0b7a
+--- /dev/null
++++ b/tests/admin/job_history.xml
+@@ -0,0 +1,9 @@
++<job_history>
++  <since scale="seconds">86400</since>
++  <builds>
++    <succeeded>0</succeeded>
++    <failed>0</failed>
++    <successrate>0</successrate>
++  </builds>
++  <testdrives>0</testdrives>
++</job_history>
+\ No newline at end of file
+diff --git a/tests/admin/running_jobs.xml b/tests/admin/running_jobs.xml
+new file mode 100644
+index 0000000..42a1611
+--- /dev/null
++++ b/tests/admin/running_jobs.xml
+@@ -0,0 +1,6 @@
++<running_jobs>
++  <builds type="array">
++  </builds>
++  <testdrives type="array">
++  </testdrives>
++</running_jobs>
+\ No newline at end of file
+diff --git a/tests/admin/summary.xml b/tests/admin/summary.xml
+new file mode 100644
+index 0000000..08b98b1
+--- /dev/null
++++ b/tests/admin/summary.xml
+@@ -0,0 +1,26 @@
++<summary>
++  <since scale="seconds">86400</since>
++  <last_bug_status_refresh_time/>
++  <unassigned_failures_count>10</unassigned_failures_count>
++  <builds>
++    <succeeded>0</succeeded>
++    <failed>0</failed>
++    <errored>0</errored>
++    <successrate>0</successrate>
++  </builds>
++  <testdrives>0</testdrives>
++  <active_users type="array">
++  </active_users>
++  <disks type="array">
++    <disk>
++      <filesystem>/dev/sda7</filesystem>
++      <total>121449922560</total>
++      <used>104339582976</used>
++      <used_percentage>91%</used_percentage>
++      <available>10940973056</available>
++      <mount_point>/build</mount_point>
++    </disk>
++  </disks>
++  <bugs type="array">
++  </bugs>
++</summary>
+\ No newline at end of file
+
+From c936df5b66bda0ace370b6a81ec35021ccf1ce3f Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Wed, 18 Jul 2012 20:07:16 +0200
+Subject: [PATCH 06/26] realistic output of numbers from xml responses
+
+real xml parser will not cast numeric strings to numbers,
+so don't do it in the preliminary mock.
+
+diff --git a/lib/admin.coffee b/lib/admin.coffee
+index c74f7bb..3ba21b7 100644
+--- a/lib/admin.coffee
++++ b/lib/admin.coffee
+@@ -6,7 +6,7 @@ exports.api = (method, args..., done) ->
+       git_revision: '074b2a42d48c7b8256c1b9328a7b29a944aeb8c7'
+ 
+     active_users:
+-      since: 86400
++      since: '86400'
+       users: []
+ 
+     health_check:
+@@ -16,23 +16,23 @@ exports.api = (method, args..., done) ->
+       rmds: 'ok'
+       kiwi_runners: [
+         {
+-          id: 1
++          id: '1'
+           address: 'localhost:3001'
+           status: 'pinged'
+           last_pinged: '2009-07-16 09:27:32 UTC'
+-          slots: 1
+-          used_slots: 0
++          slots: '1'
++          used_slots: '0'
+           load: '2.68'
+         }
+       ]
+       testdrive_runners: [
+         {
+-          id: 2
++          id: '2'
+           address: 'localhost:3002'
+           status: 'unreachable'
+           last_pinged: '2009-06-25 14:21:02 UTC'
+-          slots: 8
+-          used_slots: 0
++          slots: '8'
++          used_slots: '0'
+           load: '0.34'
+         }
+       ]
+@@ -50,23 +50,23 @@ exports.api = (method, args..., done) ->
+       ]
+ 
+     job_history:
+-      since: 86400
++      since: '86400'
+       builds:
+-        succeeded: 0
+-        failed: 0
+-        successrate: 0
+-      testdrives: 0
++        succeeded: '0'
++        failed: '0'
++        successrate: '0'
++      testdrives: '0'
+ 
+     summary:
+-      since: 86400
++      since: '86400'
+       last_bug_status_refresh_time: undefined
+-      unassigned_failures_count: 10
++      unassigned_failures_count: '10'
+       builds:
+-        succeeded: 0
+-        failed: 0
+-        errored: 0
+-        successrate: 0
+-      testdrives: 0
++        succeeded: '0'
++        failed: '0'
++        errored: '0'
++        successrate: '0'
++      testdrives: '0'
+       active_users: []
+       disks: [
+         {
+diff --git a/tests/200-admin.coffee b/tests/200-admin.coffee
+index d09606c..037fce6 100644
+--- a/tests/200-admin.coffee
++++ b/tests/200-admin.coffee
+@@ -31,7 +31,7 @@ describe 'Admin API', ->
+       anapi 'active_users', (err, r) ->
+         no_error err
+         contains r, {
+-          since: 86400
++          since: '86400'
+           users: []
+         }
+         done()
+@@ -41,12 +41,12 @@ describe 'Admin API', ->
+       anapi 'job_history', (err, r) ->
+         no_error err
+         contains r, {
+-          since: 86400
++          since: '86400'
+           builds:
+-            succeeded: 0
+-            failed: 0
+-            successrate: 0
+-          testdrives: 0
++            succeeded: '0'
++            failed: '0'
++            successrate: '0'
++          testdrives: '0'
+         }
+         done()
+ 
+@@ -65,15 +65,15 @@ describe 'Admin API', ->
+       anapi 'summary', (err, r) ->
+         no_error err
+         contains r, {
+-          since: 86400
++          since: '86400'
+           last_bug_status_refresh_time: undefined
+-          unassigned_failures_count: 10
++          unassigned_failures_count: '10'
+           builds:
+-            succeeded: 0
+-            failed: 0
+-            errored: 0
+-            successrate: 0
+-          testdrives: 0
++            succeeded: '0'
++            failed: '0'
++            errored: '0'
++            successrate: '0'
++          testdrives: '0'
+           active_users: []
+           disks: [
+             {
+@@ -100,23 +100,23 @@ describe 'Admin API', ->
+           rmds: 'ok'
+           kiwi_runners: [
+             {
+-              id: 1
++              id: '1'
+               address: 'localhost:3001'
+               status: 'pinged'
+               last_pinged: '2009-07-16 09:27:32 UTC'
+-              slots: 1
+-              used_slots: 0
++              slots: '1'
++              used_slots: '0'
+               load: '2.68'
+             }
+           ]
+           testdrive_runners: [
+             {
+-              id: 2
++              id: '2'
+               address: 'localhost:3002'
+               status: 'unreachable'
+               last_pinged: '2009-06-25 14:21:02 UTC'
+-              slots: 8
+-              used_slots: 0
++              slots: '8'
++              used_slots: '0'
+               load: '0.34'
+             }
+           ]
+
+From 50bc2d8c2143f2fb3a3173eb08bb3c104af21af6 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Wed, 18 Jul 2012 21:18:04 +0200
+Subject: [PATCH 07/26] switch tests to xml2js, uses tests/admin/*.xml
+
+
+diff --git a/lib/admin.coffee b/lib/admin.coffee
+index 3ba21b7..dacc297 100644
+--- a/lib/admin.coffee
++++ b/lib/admin.coffee
+@@ -1,91 +1,60 @@
++fs = require 'fs'
++clone = require 'clone'
++xml2js = require 'xml2js'
++
++xml2js_options = clone xml2js.defaults["0.2"]
++xml2js_options.emptyTag = undefined
++xml2js_options.explicitArray = false
++xml2js_options.explicitRoot = false
++xml2js_options.attrkey = "@"
++xml2js_options.charkey = "#"
++
++asis = (parsed) -> parsed
++since = (parsed) ->
++  parsed.since = parsed.since['#']
++  parsed
++runners = (parsed, kind) ->
++  unless parsed["#{kind}s"] instanceof Array
++    parsed["#{kind}s"] = [parsed["#{kind}s"][kind]]
++  parsed
++
++methods =
++  about: asis
++  active_users: since
++
++  health_check: (parsed) ->
++    runners parsed, 'kiwi_runner'
++    runners parsed, 'testdrive_runner'
++    unless parsed.disks instanceof Array
++      if parsed.disks.disk instanceof Array
++        parsed.disks = parsed.disks.disk
++      else
++        parsed.disks = [parsed.disks.disk]
++    disks = []
++    for d in parsed.disks
++      d.path = d['@'].path
++      delete d['@']
++      disks.push d
++    parsed
++
++  job_history: since
++  running_jobs: asis
++
++  summary: (parsed) ->
++    unless parsed.disks instanceof Array
++      parsed.disks = [parsed.disks.disk]
++    else
++      parsed.disks = (disk for disk in parsed.disks['#'])
++    since parsed
++
+ exports.api = (method, args..., done) ->
+-  data =
+-    about:
+-      server_name: 'kerogen.suse.de:3000'
+-      environment: 'development'
+-      git_revision: '074b2a42d48c7b8256c1b9328a7b29a944aeb8c7'
+-
+-    active_users:
+-      since: '86400'
+-      users: []
+-
+-    health_check:
+-      state: 'error'
+-      mysql: 'ok'
+-      thoth: 'ok'
+-      rmds: 'ok'
+-      kiwi_runners: [
+-        {
+-          id: '1'
+-          address: 'localhost:3001'
+-          status: 'pinged'
+-          last_pinged: '2009-07-16 09:27:32 UTC'
+-          slots: '1'
+-          used_slots: '0'
+-          load: '2.68'
+-        }
+-      ]
+-      testdrive_runners: [
+-        {
+-          id: '2'
+-          address: 'localhost:3002'
+-          status: 'unreachable'
+-          last_pinged: '2009-06-25 14:21:02 UTC'
+-          slots: '8'
+-          used_slots: '0'
+-          load: '0.34'
+-        }
+-      ]
+-      disks: [
+-        {
+-          path: '/'
+-          used: '61%'
+-          available: '7999651840'
+-        }
+-        {
+-          path: '/dev'
+-          used: '1%'
+-          available: '1038233600'
+-        }
+-      ]
+-
+-    job_history:
+-      since: '86400'
+-      builds:
+-        succeeded: '0'
+-        failed: '0'
+-        successrate: '0'
+-      testdrives: '0'
+-
+-    summary:
+-      since: '86400'
+-      last_bug_status_refresh_time: undefined
+-      unassigned_failures_count: '10'
+-      builds:
+-        succeeded: '0'
+-        failed: '0'
+-        errored: '0'
+-        successrate: '0'
+-      testdrives: '0'
+-      active_users: []
+-      disks: [
+-        {
+-          filesystem: '/dev/sda7'
+-          total: '121449922560'
+-          used: '104339582976'
+-          used_percentage: '91%'
+-          available: '10940973056'
+-          mount_point: '/build'
+-        }
+-      ]
+-      bugs: []
+-
+-    running_jobs:
+-      builds: []
+-      testdrives: []
+-
+-  if data[method] is undefined
+-    done "#{method}: unknown method"
++  unless methods[method]
++    return done "#{method}: unknown method"
+   else
+-    done undefined, data[method]
++    parser = new xml2js.Parser(xml2js_options)
++    fs.readFile "tests/admin/#{method}.xml", (err, data) ->
++      return done err if err
++      parser.parseString data, (err, result) ->
++        return done err if err
++        done undefined, methods[method] result
+ 
+diff --git a/package.json b/package.json
+index 516145e..cb6a3fc 100644
+--- a/package.json
++++ b/package.json
+@@ -20,7 +20,9 @@
+     "test": "make check"
+   }
+ , "dependencies": {
++    "clone": "~0.1"
+     "coffee-script": "~1.3"
++    "xml2js": "~0.1"
+   }
+ , "devDependencies": {
+     "chai": "~1.1"
+diff --git a/tests/200-admin.coffee b/tests/200-admin.coffee
+index 037fce6..f57171f 100644
+--- a/tests/200-admin.coffee
++++ b/tests/200-admin.coffee
+@@ -66,7 +66,7 @@ describe 'Admin API', ->
+         no_error err
+         contains r, {
+           since: '86400'
+-          last_bug_status_refresh_time: undefined
++          last_bug_status_refresh_time: {}
+           unassigned_failures_count: '10'
+           builds:
+             succeeded: '0'
+
+From 88a44ed7aedfffab00520bf506993e2b8e42e4d7 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Wed, 18 Jul 2012 22:06:44 +0200
+Subject: [PATCH 08/26] README
+
+
+diff --git a/README.rest b/README.rest
+new file mode 100644
+index 0000000..ea14127
+--- /dev/null
++++ b/README.rest
+@@ -0,0 +1,58 @@
++.. vim: ft=rst sts=2 sw=2 tw=70
++.. default-role:: literal
++
++======================================================================
++                             studio_napi
++======================================================================
++----------------------------------------------------------------------
++              SUSE Studio API client library for Node.js
++----------------------------------------------------------------------
++
++:Author: Roman Neuhauser
++:Contact: rneuhauser@suse.cz
++:Copyright: This document is in the public domain.
++
++.. This file is marked up using reStructuredText.
++   Lines beginning with ".." are reST directives.
++   "foo_" or "`foo bar`_" is a link, defined at ".. _foo" or
++   ".. _foo bar".
++   "::" introduces a literal block (usually some form of code).
++   "`foo`" is some kind of identifier.
++   Suspicious backslashes in the text ("`std::string`\s") are required
++   for reST to recognize the preceding character as syntax.
++
++.. important links:
++
++.. _studio_napi: https://github.com/roman-neuhauser/studio_napi
++.. _SUSE Studio: http://susestudio.com/
++.. _Node.js: http://nodejs.org/
++.. _NPM: http://npmjs.org/
++.. _NPM Registry: http://search.npmjs.org/
++
++Overview
++========
++
++studio_napi_ is a client library for the `SUSE Studio`_ HTTP API
++targetting `Node.js`_.
++
++
++Status
++======
++
++`studio_napi` is in the prototyping phase.  There are some unit tests
++for a mostly faked out partial implementation.
++
++
++Prerequisities
++==============
++
++* `Node.js`_ 0.6.x or higher
++* NPM_ (any version appropriate for your version of Node.js)
++* several packages installable with `npm` (see package.json)
++
++
++Installation
++============
++
++`studio_napi` will appear in the `NPM Registry`_ once it's ready.
++
+
+From ea4626d51af15750dfcfc67ffad2cf45e6e93779 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Thu, 19 Jul 2012 13:08:44 +0200
+Subject: [PATCH 09/26] fix package.json syntax
+
+i broke it in 50bc2d8c2143f2fb3a3173eb08bb3c104af21af6
+
+diff --git a/package.json b/package.json
+index cb6a3fc..0c1950e 100644
+--- a/package.json
++++ b/package.json
+@@ -21,8 +21,8 @@
+   }
+ , "dependencies": {
+     "clone": "~0.1"
+-    "coffee-script": "~1.3"
+-    "xml2js": "~0.1"
++  , "coffee-script": "~1.3"
++  , "xml2js": "~0.1"
+   }
+ , "devDependencies": {
+     "chai": "~1.1"
+
+From 0ff39dc15abd4b28119f5801e9c78b2430c6b570 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Thu, 19 Jul 2012 11:42:14 +0200
+Subject: [PATCH 10/26] NOTES about desired API improvements
+
+
+diff --git a/.gitignore b/.gitignore
+index e5d0ecb..f251704 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,4 +1,5 @@
+ .*.sw?
+ .sw?
++NOTES.html
+ README.html
+ node_modules/
+diff --git a/NOTES.rest b/NOTES.rest
+new file mode 100644
+index 0000000..39523ff
+--- /dev/null
++++ b/NOTES.rest
+@@ -0,0 +1,42 @@
++.. vim: ft=rst sts=2 sw=2 tw=70
++.. default-role:: literal
++
++Things about APIv2 that irk me
++==============================
++
++* studio should support JSON response bodies.
++
++  personally i wouldn't mind ditching XML completely,
++  but it should at least be provided as an option.
++
++* same things should have same representations.
++
++  compare `/summary/disks` vs `/health_check/disks`.
++
++* having *most* data in elements and *some* data
++  in attributes means two ways to handle data,
++  the arbitrary choice adds to cognitive load,
++  with no gain.
++* all timestamps should use the ISO8601 representation. ::
++
++    <last_pinged>2009-07-16 09:27:32 UTC</last_pinged>
++
++  should be one of ::
++
++    <last_pinged>2009-07-16T09:27:32</last_pinged>
++    <last_pinged>2009-07-16T09:27:32.000</last_pinged>
++
++  (`date -u '+%FT%T'`).
++
++* `<since/>` elements: what is the reference point
++  for the duration? ::
++
++    <since scale="seconds">86400</since>
++
++  there would be no ambiguity (and no attribute, so
++  easier parsing) if this was given as a timestamp: ::
++
++    <since>2009-07-16T09:27:32</since>
++
++* `/job_history/builds` omits `<errored/>`.  it should not.
++* `/health_check/mysql`: really?
+
+From 57b107db917e96ffb2457c31fa7739b42caf6750 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Thu, 19 Jul 2012 12:57:23 +0200
+Subject: [PATCH 11/26] API responses expose the root element
+
+
+diff --git a/lib/admin.coffee b/lib/admin.coffee
+index dacc297..c67b06f 100644
+--- a/lib/admin.coffee
++++ b/lib/admin.coffee
+@@ -5,7 +5,6 @@ xml2js = require 'xml2js'
+ xml2js_options = clone xml2js.defaults["0.2"]
+ xml2js_options.emptyTag = undefined
+ xml2js_options.explicitArray = false
+-xml2js_options.explicitRoot = false
+ xml2js_options.attrkey = "@"
+ xml2js_options.charkey = "#"
+ 
+@@ -56,5 +55,6 @@ exports.api = (method, args..., done) ->
+       return done err if err
+       parser.parseString data, (err, result) ->
+         return done err if err
+-        done undefined, methods[method] result
++        methods[method] result[method]
++        done undefined, result
+ 
+diff --git a/tests/200-admin.coffee b/tests/200-admin.coffee
+index f57171f..cc2956b 100644
+--- a/tests/200-admin.coffee
++++ b/tests/200-admin.coffee
+@@ -19,7 +19,7 @@ describe 'Admin API', ->
+     it 'should give hostname, RoR env, git commitish', (done) ->
+       anapi 'about', (err, r) ->
+         no_error err
+-        contains r, {
++        contains r, about: {
+           server_name: 'kerogen.suse.de:3000'
+           environment: 'development'
+           git_revision: '074b2a42d48c7b8256c1b9328a7b29a944aeb8c7'
+@@ -30,7 +30,7 @@ describe 'Admin API', ->
+     it 'should give build/testdrive data', (done) ->
+       anapi 'active_users', (err, r) ->
+         no_error err
+-        contains r, {
++        contains r, active_users: {
+           since: '86400'
+           users: []
+         }
+@@ -40,7 +40,7 @@ describe 'Admin API', ->
+     it 'should give build/testdrive stats', (done) ->
+       anapi 'job_history', (err, r) ->
+         no_error err
+-        contains r, {
++        contains r, job_history: {
+           since: '86400'
+           builds:
+             succeeded: '0'
+@@ -54,7 +54,7 @@ describe 'Admin API', ->
+     it 'should give build/testdrive data', (done) ->
+       anapi 'running_jobs', (err, r) ->
+         no_error err
+-        contains r, {
++        contains r, running_jobs: {
+           builds: []
+           testdrives: []
+         }
+@@ -64,7 +64,7 @@ describe 'Admin API', ->
+     it 'should give uptime, build/testdrive/user/bug stats, df, etc', (done) ->
+       anapi 'summary', (err, r) ->
+         no_error err
+-        contains r, {
++        contains r, summary: {
+           since: '86400'
+           last_bug_status_refresh_time: {}
+           unassigned_failures_count: '10'
+@@ -93,7 +93,7 @@ describe 'Admin API', ->
+     it 'should give crap', (done) ->
+       anapi 'health_check', (err, r) ->
+         no_error err
+-        contains r, {
++        contains r, health_check: {
+           state: 'error'
+           mysql: 'ok'
+           thoth: 'ok'
+
+From 36a0716c5b66215e45cc7753a75bfa1eeb9ff7e6 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Thu, 19 Jul 2012 13:11:39 +0200
+Subject: [PATCH 12/26] NOTES: *JSON* should be optional, not XML
+
+
+diff --git a/NOTES.rest b/NOTES.rest
+index 39523ff..7a4641f 100644
+--- a/NOTES.rest
++++ b/NOTES.rest
+@@ -7,7 +7,7 @@ Things about APIv2 that irk me
+ * studio should support JSON response bodies.
+ 
+   personally i wouldn't mind ditching XML completely,
+-  but it should at least be provided as an option.
++  but JSON should at least be provided as an option.
+ 
+ * same things should have same representations.
+ 
+
+From 14b50c52714fa3d4f1c64d1f28c5e7151db212c1 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Thu, 19 Jul 2012 14:41:05 +0200
+Subject: [PATCH 13/26] NOTES: bugs in the datetime format discussion
+
+
+diff --git a/NOTES.rest b/NOTES.rest
+index 7a4641f..11cc59c 100644
+--- a/NOTES.rest
++++ b/NOTES.rest
+@@ -17,16 +17,17 @@ Things about APIv2 that irk me
+   in attributes means two ways to handle data,
+   the arbitrary choice adds to cognitive load,
+   with no gain.
+-* all timestamps should use the ISO8601 representation. ::
++* all timestamps should use the ISO8601/RFC3339 format,
++  of course in UTC.  instead of ::
+ 
+     <last_pinged>2009-07-16 09:27:32 UTC</last_pinged>
+ 
+-  should be one of ::
++  one of these would be preferable ::
+ 
+-    <last_pinged>2009-07-16T09:27:32</last_pinged>
+-    <last_pinged>2009-07-16T09:27:32.000</last_pinged>
++    <last_pinged>2009-07-16T09:27:32Z</last_pinged>
++    <last_pinged>2009-07-16T09:27:32.000Z</last_pinged>
+ 
+-  (`date -u '+%FT%T'`).
++  (`date -u '+%FT%TZ'`).
+ 
+ * `<since/>` elements: what is the reference point
+   for the duration? ::
+
+From 5dd0baf0516c37ff201a35db8ff2c3d12635bc30 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Thu, 19 Jul 2012 14:42:03 +0200
+Subject: [PATCH 14/26] package.json: xml2js needs to be at least 0.1.14
+
+that's when xml2js.defaults['0.2'] appeared.
+
+diff --git a/package.json b/package.json
+index 0c1950e..380bdd7 100644
+--- a/package.json
++++ b/package.json
+@@ -22,7 +22,7 @@
+ , "dependencies": {
+     "clone": "~0.1"
+   , "coffee-script": "~1.3"
+-  , "xml2js": "~0.1"
++  , "xml2js": ">=0.1.14"
+   }
+ , "devDependencies": {
+     "chai": "~1.1"
+
+From 325a323019cc86b4154b6b36941cfd1c17122357 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Thu, 19 Jul 2012 15:06:39 +0200
+Subject: [PATCH 15/26] README: added Hacking section
+
+
+diff --git a/README.rest b/README.rest
+index ea14127..d09177b 100644
+--- a/README.rest
++++ b/README.rest
+@@ -56,3 +56,18 @@ Installation
+ 
+ `studio_napi` will appear in the `NPM Registry`_ once it's ready.
+ 
++
++Hacking
++=======
++
++If you want to hack on `studio_napi`: ::
++
++  git clone https://github.com/roman-neuhauser/studio_napi.git
++  cd studio_napi
++  npm install
++  npm test # or: make check
++  # happy hacking
++
++The `npm install` above downloads and installs studio_napi's
++dependencies locally (in `./node_modules/`).
++
+
+From 993f0a51300f1c16f2c1d4e0e22761a41d55320b Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Thu, 19 Jul 2012 16:53:54 +0200
+Subject: [PATCH 16/26] xml2js use moves into a separate file
+
+will be needed in lib/user.coffee as well.
+
+diff --git a/lib/admin.coffee b/lib/admin.coffee
+index c67b06f..74569d5 100644
+--- a/lib/admin.coffee
++++ b/lib/admin.coffee
+@@ -1,12 +1,5 @@
+ fs = require 'fs'
+-clone = require 'clone'
+-xml2js = require 'xml2js'
+-
+-xml2js_options = clone xml2js.defaults["0.2"]
+-xml2js_options.emptyTag = undefined
+-xml2js_options.explicitArray = false
+-xml2js_options.attrkey = "@"
+-xml2js_options.charkey = "#"
++xml = require './xml'
+ 
+ asis = (parsed) -> parsed
+ since = (parsed) ->
+@@ -50,10 +43,9 @@ exports.api = (method, args..., done) ->
+   unless methods[method]
+     return done "#{method}: unknown method"
+   else
+-    parser = new xml2js.Parser(xml2js_options)
+     fs.readFile "tests/admin/#{method}.xml", (err, data) ->
+       return done err if err
+-      parser.parseString data, (err, result) ->
++      xml.parse data, (err, result) ->
+         return done err if err
+         methods[method] result[method]
+         done undefined, result
+diff --git a/lib/xml.coffee b/lib/xml.coffee
+new file mode 100644
+index 0000000..537d987
+--- /dev/null
++++ b/lib/xml.coffee
+@@ -0,0 +1,13 @@
++clone = require 'clone'
++xml2js = require 'xml2js'
++
++xml2js_options = clone xml2js.defaults["0.2"]
++xml2js_options.emptyTag = undefined
++xml2js_options.explicitArray = false
++xml2js_options.attrkey = "@"
++xml2js_options.charkey = "#"
++
++parser = new xml2js.Parser(xml2js_options)
++
++exports.parse = (data, done) ->
++  parser.parseString data, done
+
+From 6116b3f34f9d27727fde6d6e459e605d33de733f Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Sun, 22 Jul 2012 03:14:54 +0200
+Subject: [PATCH 17/26] xml2js should output empty tags as []
+
+they used to be represented with {}; i'm going to turn on
+explicitArray, and this will be good for symmetry.
+
+diff --git a/lib/xml.coffee b/lib/xml.coffee
+index 537d987..d28523f 100644
+--- a/lib/xml.coffee
++++ b/lib/xml.coffee
+@@ -2,7 +2,7 @@ clone = require 'clone'
+ xml2js = require 'xml2js'
+ 
+ xml2js_options = clone xml2js.defaults["0.2"]
+-xml2js_options.emptyTag = undefined
++xml2js_options.emptyTag = []
+ xml2js_options.explicitArray = false
+ xml2js_options.attrkey = "@"
+ xml2js_options.charkey = "#"
+
+From 5b3be8e5eab46e394b016cdcd666210b38ae1330 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Sun, 22 Jul 2012 03:15:49 +0200
+Subject: [PATCH 18/26] a few tests for the XML parser
+
+
+diff --git a/tests/050-xml.coffee b/tests/050-xml.coffee
+new file mode 100644
+index 0000000..b4eaa36
+--- /dev/null
++++ b/tests/050-xml.coffee
+@@ -0,0 +1,82 @@
++expect = (require 'chai').expect
++
++xml = require '../lib/xml'
++
++describe 'XML parser', ->
++
++  it 'outputs empty elements as arrays', (done) ->
++    doc = '''
++      <laptop>
++        <dead/>
++      </laptop>
++    '''
++    xml.parse doc, (err, parsed) ->
++      expect(err).to.not.be.ok
++      expect(parsed)
++        .to.have.deep.property('laptop.dead')
++          .that.is.an('array')
++          .and.is.empty
++      done()
++
++  it 'outputs singleton text nodes as property values', (done) ->
++    doc = '''
++      <liters>42</liters>
++    '''
++    xml.parse doc, (err, parsed) ->
++      expect(err).to.not.be.ok
++      expect(parsed)
++        .to.be.an('object')
++        .deep.equal({liters: '42'})
++      done()
++
++  it 'outputs single children of a given element name directly', (done) ->
++    doc = '''
++      <volume>
++        <liters>42</liters>
++      </volume>
++    '''
++    xml.parse doc, (err, parsed) ->
++      expect(err).to.not.be.ok
++      expect(parsed)
++        .to.be.an('object')
++        .deep.equal({volume: {liters: '42'}})
++      done()
++
++  it 'outputs multiple children with the same element name in arrays', (done) ->
++    doc = '''
++      <drinks>
++        <beer><brand>Branik</brand></beer>
++        <beer><brand>Plzen</brand></beer>
++        <soda><brand>Kofola</brand></soda>
++      </drinks>
++    '''
++    xml.parse doc, (err, parsed) ->
++      expect(err).to.not.be.ok
++      expect(parsed)
++        .to.have.deep.property('drinks.beer')
++          .that.is.an('array')
++          .with.length(2)
++      expect(parsed.drinks.beer[0])
++        .to.be.an('object')
++        .deep.equal({brand: 'Branik'})
++      expect(parsed.drinks.beer[1])
++        .to.be.an('object')
++        .deep.equal({brand: 'Plzen'})
++      expect(parsed)
++        .to.have.deep.property('drinks.soda')
++          .that.is.an('object')
++          .deep.equal({brand: 'Kofola'})
++      done()
++
++  it 'outputs attributes under @ property', (done) ->
++    doc = '''
++      <beer brand="Branik"></beer>
++    '''
++    xml.parse doc, (err, parsed) ->
++      expect(err).to.not.be.ok
++      expect(parsed)
++        .to.have.deep.property('beer.@')
++          .that.is.an('object')
++          .with.property('brand', 'Branik')
++      done()
++
+
+From c13268046028152d734f3bde838287206a370210 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Mon, 23 Jul 2012 13:37:38 +0200
+Subject: [PATCH 19/26] helper functions for tests in their own file
+
+will be needed in multiple files
+
+diff --git a/tests/200-admin.coffee b/tests/200-admin.coffee
+index cc2956b..c003e93 100644
+--- a/tests/200-admin.coffee
++++ b/tests/200-admin.coffee
+@@ -2,16 +2,7 @@ expect = (require 'chai').expect
+ #sinon = (require 'sinon')
+ anapi = (require '../lib/admin').api
+ 
+-# FIXME: does not handle arrays well
+-contains = (actual, expected) ->
+-  for p, v of expected
+-    if v instanceof Object
+-      contains actual[p], v
+-    else
+-      (expect actual[p], p).to.equal v
+-
+-no_error = (err) ->
+-  (expect err, 'err').to.equal undefined
++{contains, no_error} = require './tools'
+ 
+ describe 'Admin API', ->
+ 
+diff --git a/tests/tools.coffee b/tests/tools.coffee
+new file mode 100644
+index 0000000..fda1824
+--- /dev/null
++++ b/tests/tools.coffee
+@@ -0,0 +1,15 @@
++expect = (require 'chai').expect
++
++# FIXME: does not handle arrays well
++contains = (actual, expected) ->
++  for p, v of expected
++    if v instanceof Object
++      contains actual[p], v
++    else
++      (expect actual[p], p).to.equal v
++
++no_error = (err) ->
++  (expect err, 'err').to.equal undefined
++
++exports.contains = contains
++exports.no_error = no_error
+
+From a4a29688e207cc45c1c3797ef50019a27fd6ecc1 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Mon, 23 Jul 2012 13:56:56 +0200
+Subject: [PATCH 20/26] example xml files for user API methods
+
+
+diff --git a/tests/user/account.xml b/tests/user/account.xml
+new file mode 100644
+index 0000000..68a7e88
+--- /dev/null
++++ b/tests/user/account.xml
+@@ -0,0 +1,13 @@
++<account>
++  <username>uexample</username>
++  <displayname>User Example</displayname>
++  <email>user@example.com</email>
++  <created_at>2009-05-14 14:51:07 UTC</created_at>
++  <openid_urls>
++    <openid_url>http://user.example.com/</openid_url>
++  </openid_urls>
++  <disk_quota>
++    <available>15GB</available>
++    <used>4%</used>
++  </disk_quota>
++</account>
+diff --git a/tests/user/api_version.xml b/tests/user/api_version.xml
+new file mode 100644
+index 0000000..43f5605
+--- /dev/null
++++ b/tests/user/api_version.xml
+@@ -0,0 +1 @@
++<version>1.0</version>
+\ No newline at end of file
+diff --git a/tests/user/appliance.xml b/tests/user/appliance.xml
+new file mode 100644
+index 0000000..7ccd222
+--- /dev/null
++++ b/tests/user/appliance.xml
+@@ -0,0 +1,22 @@
++<appliance>
++  <id>24</id>
++  <name>Cornelius' JeOS</name>
++  <last_edited>2009-04-24 12:09:42 UTC</last_edited>
++  <edit_url>http://susestudio.com/appliance/edit/24</edit_url>
++  <icon_url>http://susestudio.com/api/v1/user/appliance_icon/1234</icon_url>
++  <basesystem>11.1</basesystem>
++  <parent>
++    <id>1</id>
++    <name>openSUSE 11.1, Just enough OS (JeOS)</name>
++  </parent>
++  <builds type="array">
++    <build>
++      <id>28</id>
++      <version>0.0.1</version>
++      <image_type>oem</image_type>
++      <image_size>238</image_size>
++      <compressed_image_size>87</compressed_image_size>
++      <download_url>http://susestudio.com/download/bf1a0f08884ebac13f30b0fc62dfc44a/Cornelius_JeOS.x86_64-0.0.1.oem.tar.gz</download_url>
++    </build>
++  </builds>
++</appliance>
+diff --git a/tests/user/appliance_status.xml b/tests/user/appliance_status.xml
+new file mode 100644
+index 0000000..a637df5
+--- /dev/null
++++ b/tests/user/appliance_status.xml
+@@ -0,0 +1,13 @@
++<status>
++  <state>error</state>
++  <issues>
++    <issue>
++      <type>error</type>
++      <text>You must include a kernel package in your appliance.</text>
++      <solution>
++        <type>install</type>
++        <package>kernel-default</package>
++      </solution>
++    </issue>
++  </issues>
++</status>
+diff --git a/tests/user/appliances.xml b/tests/user/appliances.xml
+new file mode 100644
+index 0000000..77bfa93
+--- /dev/null
++++ b/tests/user/appliances.xml
+@@ -0,0 +1,54 @@
++<appliances type="array">
++  <appliance>
++    <id>24</id>
++    <name>Cornelius' JeOS</name>
++    <last_edited>2009-04-24 12:09:42 UTC</last_edited>
++    <edit_url>http://susestudio.com/appliance/edit/24</edit_url>
++    <icon_url>http://susestudio.com/api/v1/user/appliance_icon/1234</icon_url>
++    <basesystem>11.1</basesystem>
++    <parent>
++      <id>1</id>
++      <name>openSUSE 11.1, Just enough OS (JeOS)</name>
++    </parent>
++    <builds type="array">
++      <build>
++        <id>28</id>
++        <version>0.0.1</version>
++        <image_type>oem</image_type>
++        <image_size>238</image_size>
++        <compressed_image_size>87</compressed_image_size>
++        <download_url>http://susestudio.com/download/bf1a0f08884ebac13f30b0fc62dfc44a/Cornelius_JeOS.x86_64-0.0.1.oem.tar.gz</download_url>
++      </build>
++    </builds>
++  </appliance>
++  <appliance>
++    <id>8</id>
++    <name>Text Only</name>
++    <last_edited>2009-04-20 14:21:49 UTC</last_edited>
++    <edit_url>http://susestudio.com/appliance/edit/8</edit_url>
++    <icon_url>http://susestudio.com/api/v1/user/appliance_icon/1234</icon_url>
++    <parent>
++      <id>2</id>
++      <name>openSUSE 11.1, Server</name>
++      <basesystem>11.1</basesystem>
++    </parent>
++    <builds type="array">
++      <build>
++        <id>26</id>
++        <version>0.0.3</version>
++        <image_type>iso</image_type>
++        <image_size>136</image_size>
++        <compressed_image_size>0</compressed_image_size>
++        <download_url>http://susestudio.com/download/3b8c8785320b147610b8488c837195ac/Text_Only.i686-0.0.3.iso</download_url>
++      </build>
++      <build>
++        <id>25</id>
++        <version>0.0.3</version>
++        <image_type>oem</image_type>
++        <image_size>498</image_size>
++        <compressed_image_size>149</compressed_image_size>
++        <download_url>http://susestudio.com/download/1e06698c8c88a65d4759a7c24ad26015/Text_Only.i686-0.0.3.oem.tar.gz</download_url>
++      </build>
++    </builds>
++  </appliance>
++</appliances>
+diff --git a/tests/user/build.xml b/tests/user/build.xml
+new file mode 100644
+index 0000000..6825779
+--- /dev/null
++++ b/tests/user/build.xml
+@@ -0,0 +1,14 @@
++<build>
++  <id>28</id>
++  <version>0.0.1</version>
++  <state>finished</state>
++  <expired>false</expired>
++  <image_type>oem</image_type>
++  <checksum>
++    <md5>f0071c5f47c892478a8d28b0fe1cfde6</md5>
++    <sha1>bf988e8a338bd4996be33c840de804126fecfeab</sha1>
++  </checksum>
++  <size>238</size>
++  <compressed_image_size>87</compressed_image_size>
++  <download_url>http://susestudio.com/download/bf1a0f08884ebac13f30b0fc62dfc44a/Cornelius_JeOS.x86_64-0.0.1.oem.tar.gz</download_url>
++</build>
+\ No newline at end of file
+diff --git a/tests/user/builds.xml b/tests/user/builds.xml
+new file mode 100644
+index 0000000..e9bb40b
+--- /dev/null
++++ b/tests/user/builds.xml
+@@ -0,0 +1,16 @@
++<builds>
++  <build>
++    <id>28</id>
++    <version>0.0.1</version>
++    <state>finished</state>
++    <expired>false</expired>
++    <image_type>oem</image_type>
++    <checksum>
++      <md5>bf1a0f08884ebac13f30b0fc62dfc44a</md5>
++      <sha1>bf988e8a338bd4996be33c840de804126fecfeab</sha1>
++    </checksum>
++    <size>238</size>
++    <compressed_image_size>87</compressed_image_size>
++    <download_url>http://susestudio.com/download/bf1a0f08884ebac13f30b0fc62dfc44a/Cornelius_JeOS.x86_64-0.0.1.oem.tar.gz</download_url>
++  </build>
++</builds>
+diff --git a/tests/user/configuration.xml b/tests/user/configuration.xml
+new file mode 100644
+index 0000000..fcbc617
+--- /dev/null
++++ b/tests/user/configuration.xml
+@@ -0,0 +1,164 @@
++<configuration>
++  <id>24</id>
++  <name>LAMP Server</name>
++  <description>This is a LAMP server.
++
++It provides Linux, Apache, MySQL, and Perl.</description>
++  <website>http://susestudio.com</website>
++  <tags count="2">
++    <tag>lamp</tag>
++    <tag>server</tag>
++  </tags>
++  <locale>
++    <keyboard_layout>english-uk</keyboard_layout>
++    <language>en_GB.UTF-8</language>
++    <timezone>
++      <location>Europe/Berlin</location>
++    </timezone>
++  </locale>
++  <network>
++    <type>manual</type>
++    <hostname>lampserver</hostname>
++    <ip>192.168.1.100</ip>
++    <netmask>255.255.255.0</netmask>
++    <route>192.168.1.1</route>
++    <nameservers>192.168.1.1, 192.168.1.2</nameservers>
++  </network>
++  <firewall>
++    <enabled>true</enabled>
++    <open_port>ssh</open_port>
++    <open_port>http</open_port>
++  </firewall>
++  <users count="3">
++    <user>
++      <name>root</name>
++      <password>linux</password>
++      <group>root</group>
++      <shell>/bin/bash</shell>
++      <homedir>/root</homedir>
++    </user>
++    <user>
++      <name>tux</name>
++      <password>linux</password>
++      <group>users</group>
++      <shell>/bin/bash</shell>
++      <homedir>/home/tux</homedir>
++    </user>
++    <user>
++      <name>webdev</name>
++      <password>linux1234</password>
++      <group>users</group>
++      <shell>/bin/bash</shell>
++      <homedir>/home/webdev</homedir>
++    </user>
++  </users>
++  <eulas count="1">
++    <eula>This is an End User License Agreement.
++</eula>
++  </eulas>
++  <databases count="1">
++    <database>
++      <type>pgsql</type>
++        <users count="1">
++          <user>
++            <username>db_user</username>
++            <password>linux</password>
++            <database_list>project_db</database_list>
++          </user>
++        </users>
++    </database>
++  </databases>
++  <autostarts count="1">
++    <autostart>
++      <command>/usr/bin/someprogram</command>
++      <description>Launch "someprogram"</description>
++      <enabled>true</enabled>
++      <user>tux</user>
++    </autostart>
++  </autostarts>
++  <settings>
++    <memory_size>512</memory_size>
++    <disk_size>16</disk_size>
++    <swap_size>512</swap_size>
++    <pae_enabled></pae_enabled>
++    <xen_host_mode_enabled>true</xen_host_mode_enabled>
++    <cdrom_enabled>true</cdrom_enabled>
++    <webyast_enabled>false</webyast_enabled>
++    <public_clonable>true</public_clonable>
++    <runlevel>3</runlevel>
++    <automatic_login>tux</automatic_login>
++  </settings>
++  <lvm>
++    <enabled>true</enabled>
++    <volume_group>systemVG</volume_group>
++    <volumes count="2">
++      <volume>
++        <size>1000</size>
++        <path>/</path>
++      </volume>
++      <volume>
++        <size>100000</size>
++        <path>/home</path>
++      </volume>
++    </volumes>
++  </lvm>
++  <scripts>
++    <build>
++      <enabled>true</enabled>
++      <script>#!/bin/bash -e
++      #
++      # This script is executed at the end of appliance creation.  Here you can do
++      # one-time actions to modify your appliance before it is ever used, like
++      # removing files and directories to make it smaller, creating symlinks,
++      # generating indexes, etc.
++      #
++      # The 'kiwi_type' variable will contain the format of the appliance (oem =
++      # disk image, vmx = VMware, iso = CD/DVD, xen = Xen).
++      #
++      
++      # read in some variables
++      . /studio/profile
++      
++      #======================================
++      # Prune extraneous files
++      #--------------------------------------
++      # Remove all documentation
++      docfiles=`find /usr/share/doc/packages -type f |grep -iv "copying\|license\|copyright"`
++      rm -f $docfiles
++      rm -rf /usr/share/info
++      rm -rf /usr/share/man
++      
++      # fix the setlocale error
++      sed -i 's/en_US.UTF-8/POSIX/g' /etc/sysconfig/language
++      
++      exit 0</script>
++    </build>
++    <boot>
++      <enabled>true</enabled>
++      <script>#!/bin/bash
++      #
++      # This script is executed whenever your appliance boots.  Here you can add
++      # commands to be executed before the system enters the first runlevel.  This
++      # could include loading kernel modules, starting daemons that aren't managed
++      # by init files, asking questions at the console, etc.
++      #
++      # The 'kiwi_type' variable will contain the format of the appliance (oem =
++      # disk image, vmx = VMware, iso = CD/DVD, xen = Xen).
++      #
++      
++      # read in some variables
++      . /studio/profile
++      
++      if [ -f /etc/init.d/suse_studio_firstboot ]
++      then
++        
++        # Put commands to be run on the first boot of your appliance here
++        echo "Running SUSE Studio first boot script..."
++      
++      fi</script>
++    </boot>
++    <autoyast>
++      <enabled>false</enabled>
++    </autoyast>
++  </scripts>
++</configuration>
+diff --git a/tests/user/file.xml b/tests/user/file.xml
+new file mode 100644
+index 0000000..32ea11c
+--- /dev/null
++++ b/tests/user/file.xml
+@@ -0,0 +1,10 @@
++<file>
++  <id>21</id>
++  <filename>api.txt</filename>
++  <path>/</path>
++  <owner>nobody</owner>
++  <group>nobody</group>
++  <permissions>644</permissions>
++  <enabled>true</enabled>
++  <download_url>http://susestudio.com/api/v1/user/files/21/data</download_url>
++</file>
+diff --git a/tests/user/files.xml b/tests/user/files.xml
+new file mode 100644
+index 0000000..b656c3a
+--- /dev/null
++++ b/tests/user/files.xml
+@@ -0,0 +1,22 @@
++<files>
++  <file>
++    <id>21</id>
++    <filename>api.txt</filename>
++    <path>/</path>
++    <owner>nobody</owner>
++    <group>nobody</group>
++    <permissions>644</permissions>
++    <enabled>true</enabled>
++    <download_url>http://susestudio.com/api/v1/user/files/21/data</download_url>
++  </file>
++  <file>
++    <id>22</id>
++    <filename>appliances.xml</filename>
++    <path>/</path>
++    <owner>nobody</owner>
++    <group>nobody</group>
++    <permissions>644</permissions>
++    <enabled>true</enabled>
++    <download_url>http://susestudio.com/api/v1/user/files/22/data</download_url>
++  </file>
++</files>
+diff --git a/tests/user/gallery_appliance.xml b/tests/user/gallery_appliance.xml
+new file mode 100644
+index 0000000..be7612a
+--- /dev/null
++++ b/tests/user/gallery_appliance.xml
+@@ -0,0 +1,56 @@
++<gallery>
++  <appliance>
++    <id>22</id>
++    <name>Matt's Amazing JeOS</name>
++    <version>5.0.0</version>
++    <release_notes>Added the AppArmor package for *EXTRA SECURITY*.</release_notes>
++    <homepage>http://susestudio.com</homepage>
++    <description>THIS IS AN AWESOME JEOS APPLIANCE DOWNLOAD</description>
++    <publisher>Matt Barringer</publisher>
++    <username>mbarringer</username>
++    <based_on>11.3</based_on>
++    <formats count="1">
++      <format md5="d12788f96487fce0d41aaafd3e1ab70d">oem</format>
++    </formats>
++    <configuration>
++      <accounts count="3">
++        <account>
++          <user>root</user>
++          <password>linux</password>
++        </account>
++        <account>
++          <user>tux</user>
++          <password>linux</password>
++        </account>
++        <account>
++          <user>version3</user>
++          <password>pass2</password>
++        </account>
++      </accounts>
++    </configuration>
++    <keyboard_layout>english-us</keyboard_layout>
++    <language>en_US.UTF-8</language>
++    <timezone>
++      <location>Europe/Berlin</location>
++    </timezone>
++    <network>
++      <type>ask_on_first_boot</type>
++    </network>
++    <firewall>
++      <enabled>true</enabled>
++      <open_port>ssh</open_port>
++      <open_port>http</open_port>
++    </firewall>
++    <security>
++      <sources>
++        <only_trusted>false</only_trusted>
++        <untrusted_source>mbarringer openSUSE 11.3</untrusted_source>
++      </sources>
++      <custom_packages>
++        <uses_custom_packages>false</uses_custom_packages>
++      </custom_packages>
++      <overlay_files>false</overlay_files>
++      <custom_scripts>false</custom_scripts>
++    </security>
++  </appliance>
++</gallery>
+diff --git a/tests/user/gallery_appliance_comments.xml b/tests/user/gallery_appliance_comments.xml
+new file mode 100644
+index 0000000..6761fba
+--- /dev/null
++++ b/tests/user/gallery_appliance_comments.xml
+@@ -0,0 +1,20 @@
++<gallery>
++  <appliance>
++    <id>22</id>
++    <comments count="2">
++      <comment>
++        <id>3</id>
++        <timestamp>2010-10-11 14:01:24 UTC</timestamp>
++        <username>Matt Barringer</username>
++        <text>This is a comment posted via the API</text>
++      </comment>
++      <comment>
++        <id>4</id>
++        <parent_id>3</parent_id>
++        <timestamp>2010-10-11 14:02:05 UTC</timestamp>
++        <username>Matt Barringer</username>
++        <text>This is a reply to a comment posted via the API</text>
++      </comment>
++    </comments>
++  </appliance>
++</gallery>
+diff --git a/tests/user/gallery_appliance_rating.xml b/tests/user/gallery_appliance_rating.xml
+new file mode 100644
+index 0000000..d318779
+--- /dev/null
++++ b/tests/user/gallery_appliance_rating.xml
+@@ -0,0 +1,6 @@
++<gallery>
++  <appliance>
++    <ratings>2</ratings>
++    <average_rating>5.0</average_rating>
++  </appliance>
++</gallery>
+diff --git a/tests/user/gallery_appliance_software.xml b/tests/user/gallery_appliance_software.xml
+new file mode 100644
+index 0000000..1058cca
+--- /dev/null
++++ b/tests/user/gallery_appliance_software.xml
+@@ -0,0 +1,281 @@
++<gallery>
++  <appliance>
++    <id>22</id>
++    <repositories count="3">
++      <repository trusted="false">mbarringer openSUSE 11.3</repository>
++      <repository trusted="true">openSUSE 11.3 OSS</repository>
++      <repository trusted="true">openSUSE 11.3 Updates</repository>
++    </repositories>
++    <selected_software count="33">
++      <package repository="openSUSE 11.3 Updates" version="11.3-8.3.1">aaa_base</package>
++      <pattern repository="openSUSE 11.3 OSS" version="11.3">apparmor</pattern>
++      <package repository="openSUSE 11.3 OSS" version="11.3-1.2">branding-openSUSE</package>
++      <package repository="openSUSE 11.3 OSS" version="3.2.3-60.1">dhcpcd</package>
++      <package repository="openSUSE 11.3 OSS" version="2.16-53.1">glib2-branding-openSUSE</package>
++      <package repository="openSUSE 11.3 OSS" version="0.97-171.1">grub</package>
++      <package repository="openSUSE 11.3 OSS" version="17.3-1.7">hwinfo</package>
++      <package repository="openSUSE 11.3 OSS" version="1.14.0-9.1">insserv</package>
++      <package repository="openSUSE 11.3 Updates" version="ss021109-300.1.1">iputils</package>
++      <package repository="openSUSE 11.3 OSS" version="1.14.1-30.1">kbd</package>
++      <package repository="openSUSE 11.3 Updates" version="2.6.34.7-0.5.1">kernel-default</package>
++      <package repository="openSUSE 11.3 OSS" version="4.5.0_20100604-1.12">libgcc45</package>
++      <package repository="openSUSE 11.3 OSS" version="20070810-89.1">licenses</package>
++      <package repository="openSUSE 11.3 OSS" version="2.6.0-2.3">mkinitrd</package>
++      <package repository="openSUSE 11.3 OSS" version="3.12-1.3">module-init-tools</package>
++      <package repository="openSUSE 11.3 OSS" version="11.1-5.1">netcfg</package>
++      <package repository="openSUSE 11.3 OSS" version="5.4p1-8.2">openssh</package>
++      <package repository="openSUSE 11.3 OSS" version="1.0-8.2">openSUSE-build-key</package>
++      <package repository="openSUSE 11.3 OSS" version="11.3-1.82">openSUSE-release</package>
++      <package repository="openSUSE 11.3 OSS" version="0.9-20.2">PolicyKit</package>
++      <package repository="openSUSE 11.3 OSS" version="0.1_201006171648-1.2">polkit-default-privs</package>
++      <package repository="openSUSE 11.3 OSS" version="3.2.8-16.1">procps</package>
++      <package repository="openSUSE 11.3 OSS" version="3.2.10-1.4">pwdutils</package>
++      <package repository="openSUSE 11.3 OSS" version="0.1.6+git20080930-10.1">rpcbind</package>
++      <package repository="openSUSE 11.3 OSS" version="4.8.0-4.4">rpm</package>
++      <package repository="openSUSE 11.3 OSS" version="3.6.239-1.2">SuSEfirewall2</package>
++      <package repository="openSUSE 11.3 Updates" version="0.73.7-2.1.1">sysconfig</package>
++      <package repository="openSUSE 11.3 Updates" version="3.1.1-4.1.1">syslog-ng</package>
++      <package repository="openSUSE 11.3 OSS" version="7.2-23.1">vim</package>
++      <package repository="openSUSE 11.3 OSS" version="1.11.4-12.2">wget</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.5-1.6">yast2-firstboot</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.5-1.6">yast2-ncurses</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.33-1.4">yast2-network</package>
++    </selected_software>
++    <installed_software count="234">
++      <package repository="openSUSE 11.3 Updates" version="11.3-8.3.1">aaa_base</package>
++      <pattern repository="openSUSE 11.3 OSS" version="11.3">apparmor</pattern>
++      <package repository="openSUSE 11.3 OSS" version="2.3.1-21.1">apparmor-parser</package>
++      <package repository="openSUSE 11.3 OSS" version="2.3-56.1">apparmor-profiles</package>
++      <package repository="openSUSE 11.3 OSS" version="1.9.1-1.10">aria2</package>
++      <package repository="openSUSE 11.3 OSS" version="0.60.6-32.1">aspell</package>
++      <package repository="openSUSE 11.3 OSS" version="2.0.4-4.1">audit</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.10-1.8">autoyast2-installation</package>
++      <package repository="openSUSE 11.3 OSS" version="4.1-8.1">bash</package>
++      <package repository="openSUSE 11.3 OSS" version="11.3-1.2">branding-openSUSE</package>
++      <package repository="openSUSE 11.3 OSS" version="11.3-8.1">bundle-lang-common-en</package>
++      <package repository="openSUSE 11.3 Updates" version="1.0.5-39.1.1">bzip2</package>
++      <package repository="openSUSE 11.3 OSS" version="0.4.1-6.1">ConsoleKit</package>
++      <package repository="openSUSE 11.3 OSS" version="7.1-10.1">coreutils</package>
++      <package repository="openSUSE 11.3 Updates" version="2.11-4.1.1">cpio</package>
++      <package repository="openSUSE 11.3 OSS" version="2.8.16-3.22">cracklib</package>
++      <package repository="openSUSE 11.3 OSS" version="2.8.12-47.1">cracklib-dict-full</package>
++      <package repository="openSUSE 11.3 OSS" version="4.1-210.1">cron</package>
++      <package repository="openSUSE 11.3 OSS" version="1.1.2-3.3">cryptsetup</package>
++      <package repository="openSUSE 11.3 OSS" version="7.20.1-3.4">curl</package>
++      <package repository="openSUSE 11.3 OSS" version="2.1.23-11.1">cyrus-sasl</package>
++      <package repository="openSUSE 11.3 OSS" version="1.2.24-1.18">dbus-1</package>
++      <package repository="openSUSE 11.3 OSS" version="0.86-1.19">dbus-1-glib</package>
++      <package repository="openSUSE 11.3 Updates" version="1.02.49-4.1.1">device-mapper</package>
++      <package repository="openSUSE 11.3 OSS" version="3.2.3-60.1">dhcpcd</package>
++      <package repository="openSUSE 11.3 OSS" version="2.8.7-150.1">diffutils</package>
++      <package repository="openSUSE 11.3 OSS" version="1.0.91-2.12">dirmngr</package>
++      <package repository="openSUSE 11.3 OSS" version="1.0.0.rc16-4.3">dmraid</package>
++      <package repository="openSUSE 11.3 OSS" version="1.41.11-1.11">e2fsprogs</package>
++      <package repository="openSUSE 11.3 OSS" version="0.147-1.19">elfutils</package>
++      <package repository="openSUSE 11.3 OSS" version="5.04-2.5">file</package>
++      <package repository="openSUSE 11.3 OSS" version="11.3-1.2">filesystem</package>
++      <package repository="openSUSE 11.3 OSS" version="1.42-250.1">fillup</package>
++      <package repository="openSUSE 11.3 OSS" version="4.4.2-4.1">findutils</package>
++      <package repository="openSUSE 11.3 OSS" version="3.1.6-31.1">gawk</package>
++      <package repository="openSUSE 11.3 OSS" version="1.8.3-373.4">gdbm</package>
++      <package repository="openSUSE 11.3 OSS" version="2.24.1-2.5">glib2</package>
++      <package repository="openSUSE 11.3 OSS" version="2.16-53.1">glib2-branding-openSUSE</package>
++      <package repository="openSUSE 11.3 Updates" version="2.11.2-3.3.1">glibc</package>
++      <package repository="openSUSE 11.3 Updates" version="2.11.2-3.3.1">glibc-32bit</package>
++      <package repository="openSUSE 11.3 Updates" version="2.11.2-3.3.1">glibc-locale</package>
++      <package repository="openSUSE 11.3 Updates" version="2.0.15-5.1.1">gpg2</package>
++      <package repository="openSUSE 11.3 OSS" version="2.5.4-7.1">grep</package>
++      <package repository="openSUSE 11.3 OSS" version="0.97-171.1">grub</package>
++      <package repository="openSUSE 11.3 OSS" version="1.3.13-1.28">gzip</package>
++      <package repository="openSUSE 11.3 OSS" version="0.12-3.1">hicolor-icon-theme</package>
++      <package repository="openSUSE 11.3 OSS" version="17.3-1.7">hwinfo</package>
++      <package repository="openSUSE 11.3 Updates" version="4.13a-4.3.1">info</package>
++      <package repository="openSUSE 11.3 OSS" version="0.5-85.1">initviocons</package>
++      <package repository="openSUSE 11.3 OSS" version="1.14.0-9.1">insserv</package>
++      <package repository="openSUSE 11.3 OSS" version="2.6.29.1-12.1">iproute2</package>
++      <package repository="openSUSE 11.3 OSS" version="1.4.8-1.5">iptables</package>
++      <package repository="openSUSE 11.3 Updates" version="ss021109-300.1.1">iputils</package>
++      <package repository="openSUSE 11.3 OSS" version="1.14.1-30.1">kbd</package>
++      <package repository="openSUSE 11.3 Updates" version="2.6.34.7-0.5.1">kernel-default</package>
++      <package repository="openSUSE 11.3 OSS" version="1.3-1.9">keyutils-libs</package>
++      <package repository="openSUSE 11.3 OSS" version="1.4.1-720.1">klogd</package>
++      <package repository="openSUSE 11.3 OSS" version="0.4.8-51.3">kpartx</package>
++      <package repository="openSUSE 11.3 Updates" version="1.8.1-5.1.1">krb5</package>
++      <package repository="openSUSE 11.3 OSS" version="2.2.48-8.1">libacl</package>
++      <package repository="openSUSE 11.3 OSS" version="1.4-79.1">libadns1</package>
++      <package repository="openSUSE 11.3 OSS" version="0.3.107-4.1">libaio</package>
++      <package repository="openSUSE 11.3 OSS" version="0.147-1.19">libasm1</package>
++      <package repository="openSUSE 11.3 OSS" version="2.0.0-3.7">libassuan0</package>
++      <package repository="openSUSE 11.3 OSS" version="2.4.44-7.1">libattr</package>
++      <package repository="openSUSE 11.3 OSS" version="2.0.4-4.1">libaudit1</package>
++      <package repository="openSUSE 11.3 OSS" version="2.0.4-4.1">libauparse0</package>
++      <package repository="openSUSE 11.3 OSS" version="2.17.2-5.3">libblkid1</package>
++      <package repository="openSUSE 11.3 OSS" version="2.1.0.342-136.1">libblocxx6</package>
++      <package repository="openSUSE 11.3 Updates" version="1.0.5-39.1.1">libbz2-1</package>
++      <package repository="openSUSE 11.3 OSS" version="2.16-9.1">libcap2</package>
++      <package repository="openSUSE 11.3 OSS" version="1.41.11-1.11">libcom_err2</package>
++      <package repository="openSUSE 11.3 OSS" version="2.8.16-3.22">libcrack2</package>
++      <package repository="openSUSE 11.3 OSS" version="1.1.2-3.3">libcryptsetup1</package>
++      <package repository="openSUSE 11.3 OSS" version="7.20.1-3.4">libcurl4</package>
++      <package repository="openSUSE 11.3 OSS" version="4.5.20-99.13">libdb-4_5</package>
++      <package repository="openSUSE 11.3 OSS" version="0.147-1.19">libdw1</package>
++      <package repository="openSUSE 11.3 OSS" version="0.6-5.1">libeggdbus-1-0</package>
++      <package repository="openSUSE 11.3 OSS" version="0.147-1.19">libelf1</package>
++      <package repository="openSUSE 11.3 OSS" version="1.13-1.5">libenca0</package>
++      <package repository="openSUSE 11.3 OSS" version="0.2.9-1.8">libevtlog0</package>
++      <package repository="openSUSE 11.3 OSS" version="2.0.1-98.1">libexpat1</package>
++      <package repository="openSUSE 11.3 OSS" version="1.41.11-1.11">libext2fs2</package>
++      <package repository="openSUSE 11.3 OSS" version="4.5.0_20100604-1.12">libgcc45</package>
++      <package repository="openSUSE 11.3 OSS" version="1.4.4-6.1">libgcrypt11</package>
++      <package repository="openSUSE 11.3 OSS" version="2.24.1-2.5">libgio-2_0-0</package>
++      <package repository="openSUSE 11.3 OSS" version="2.24.1-2.5">libglib-2_0-0</package>
++      <package repository="openSUSE 11.3 OSS" version="2.24.1-2.5">libgmodule-2_0-0</package>
++      <package repository="openSUSE 11.3 OSS" version="2.24.1-2.5">libgobject-2_0-0</package>
++      <package repository="openSUSE 11.3 OSS" version="1.7-7.1">libgpg-error0</package>
++      <package repository="openSUSE 11.3 OSS" version="0.1-13.1">libgssglue1</package>
++      <package repository="openSUSE 11.3 OSS" version="2.24.1-2.5">libgthread-2_0-0</package>
++      <package repository="openSUSE 11.3 OSS" version="1.15-4.1">libidn</package>
++      <package repository="openSUSE 11.3 OSS" version="1.0.7-5.1">libksba</package>
++      <package repository="openSUSE 11.3 OSS" version="2.4.21-9.1">libldap-2_4-2</package>
++      <package repository="openSUSE 11.3 OSS" version="0.2.1-3.2">libldapcpp1</package>
++      <package repository="openSUSE 11.3 OSS" version="5.1.4-10.4">liblua5_1</package>
++      <package repository="openSUSE 11.3 OSS" version="4.999.9beta-3.7">liblzma0</package>
++      <package repository="openSUSE 11.3 OSS" version="5.7-3.39">libncurses5</package>
++      <package repository="openSUSE 11.3 OSS" version="5.7-3.39">libncurses5-32bit</package>
++      <package repository="openSUSE 11.3 OSS" version="5.7-3.39">libncurses6</package>
++      <package repository="openSUSE 11.3 OSS" version="1.1.2.1-146.1">libnet</package>
++      <package repository="openSUSE 11.3 OSS" version="2.0.2-113.1">libnscd</package>
++      <package repository="openSUSE 11.3 OSS" version="1.0.0-5.4">libopenssl1_0_0</package>
++      <package repository="openSUSE 11.3 OSS" version="7.9.0-6.7">libpcre0</package>
++      <package repository="openSUSE 11.3 OSS" version="0.96-4.1">libpolkit0</package>
++      <package repository="openSUSE 11.3 OSS" version="1.13-6.4">libpopt0</package>
++      <package repository="openSUSE 11.3 OSS" version="2.0.7-121.1">libpth20</package>
++      <package repository="openSUSE 11.3 OSS" version="0.2.9-2.3">librcc0</package>
++      <package repository="openSUSE 11.3 OSS" version="0.1.13-1.5">librcd0</package>
++      <package repository="openSUSE 11.3 OSS" version="6.1-8.1">libreadline6</package>
++      <package repository="openSUSE 11.3 OSS" version="0.3.0.5-149.1">libreiserfs</package>
++      <package repository="openSUSE 11.3 OSS" version="2.0.91-4.2">libselinux1</package>
++      <package repository="openSUSE 11.3 OSS" version="2.0.41-2.10">libsepol1</package>
++      <package repository="openSUSE 11.3 OSS" version="3.6.23-4.1">libsqlite3-0</package>
++      <package repository="openSUSE 11.3 OSS" version="1.2.2_git200911281702-3.1">libssh2-1</package>
++      <package repository="openSUSE 11.3 OSS" version="4.5.0_20100604-1.12">libstdc++45</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.16-1.3">libstorage</package>
++      <package repository="openSUSE 11.3 OSS" version="0.2.1-3.1">libtirpc1</package>
++      <package repository="openSUSE 11.3 OSS" version="157-3.1">libudev0</package>
++      <package repository="openSUSE 11.3 OSS" version="0.1.13-6.1">libusb-0_1-4</package>
++      <package repository="openSUSE 11.3 OSS" version="1.0.8-1.2">libusb-1_0-0</package>
++      <package repository="openSUSE 11.3 OSS" version="2.17.2-5.3">libuuid1</package>
++      <package repository="openSUSE 11.3 OSS" version="1.1-7.1">libx86emu1</package>
++      <package repository="openSUSE 11.3 OSS" version="3.0.3-4.1">libxcrypt</package>
++      <package repository="openSUSE 11.3 OSS" version="2.7.7-3.6">libxml2</package>
++      <package repository="openSUSE 11.3 OSS" version="0.99-7.1">libzio</package>
++      <package repository="openSUSE 11.3 OSS" version="7.7.5-7.2">libzypp</package>
++      <package repository="openSUSE 11.3 OSS" version="20070810-89.1">licenses</package>
++      <package repository="openSUSE 11.3 OSS" version="1.6.1-5.2">limal</package>
++      <package repository="openSUSE 11.3 OSS" version="1.6.1-5.2">limal-perl</package>
++      <package repository="openSUSE 11.3 OSS" version="3.40-2.2">login</package>
++      <package repository="openSUSE 11.3 OSS" version="3.7.8-6.1">logrotate</package>
++      <package repository="openSUSE 11.3 Updates" version="2.02.67-4.1.1">lvm2</package>
++      <package repository="openSUSE 11.3 OSS" version="1.22-1.6">master-boot-code</package>
++      <package repository="openSUSE 11.3 OSS" version="3.0.3-9.1">mdadm</package>
++      <package repository="openSUSE 11.3 OSS" version="1.0.7s-97.1">mingetty</package>
++      <package repository="openSUSE 11.3 OSS" version="2.6.0-2.3">mkinitrd</package>
++      <package repository="openSUSE 11.3 OSS" version="3.12-1.3">module-init-tools</package>
++      <package repository="openSUSE 11.3 OSS" version="0.4.8-51.3">multipath-tools</package>
++      <package repository="openSUSE 11.3 OSS" version="5.7-3.39">ncurses-utils</package>
++      <package repository="openSUSE 11.3 OSS" version="1.60-741.1">net-tools</package>
++      <package repository="openSUSE 11.3 OSS" version="11.1-5.1">netcfg</package>
++      <package repository="openSUSE 11.3 OSS" version="1.2.0-179.1">openslp</package>
++      <package repository="openSUSE 11.3 OSS" version="5.4p1-8.2">openssh</package>
++      <package repository="openSUSE 11.3 OSS" version="1.0.0-5.4">openssl</package>
++      <package repository="openSUSE 11.3 OSS" version="1.0-8.2">openSUSE-build-key</package>
++      <package repository="openSUSE 11.3 OSS" version="11.3-1.82">openSUSE-release</package>
++      <package repository="openSUSE 11.3 OSS" version="11.3-1.82">openSUSE-release-ftp</package>
++      <package repository="openSUSE 11.3 OSS" version="1.1.1.90-1.6">pam</package>
++      <package repository="openSUSE 11.3 OSS" version="0.73-2.10">pam-config</package>
++      <package repository="openSUSE 11.3 OSS" version="11.2-8.1">pam-modules</package>
++      <package repository="openSUSE 11.3 OSS" version="2.2-3.3">parted</package>
++      <package repository="openSUSE 11.3 OSS" version="11.3-22.1">patterns-openSUSE-apparmor</package>
++      <package repository="openSUSE 11.3 OSS" version="11.3-22.1">patterns-openSUSE-base</package>
++      <package repository="openSUSE 11.3 OSS" version="11.3-22.1">patterns-openSUSE-yast2_install_wf</package>
++      <package repository="openSUSE 11.3 OSS" version="3.1.7-4.1">pciutils</package>
++      <package repository="openSUSE 11.3 OSS" version="2010.6.12-1.2">pciutils-ids</package>
++      <package repository="openSUSE 11.3 OSS" version="7.9.0-6.7">pcre</package>
++      <package repository="openSUSE 11.3 Updates" version="5.12.1-2.1.1">perl</package>
++      <package repository="openSUSE 11.3 Updates" version="5.12.1-2.1.1">perl-base</package>
++      <package repository="openSUSE 11.3 Updates" version="0.5.12.1-0.1.1">perl-Bootloader</package>
++      <package repository="openSUSE 11.3 OSS" version="1.30-5.1">perl-Config-Crontab</package>
++      <package repository="openSUSE 11.3 OSS" version="2.12-7.1">perl-Digest-SHA1</package>
++      <package repository="openSUSE 11.3 OSS" version="1.05-143.1">perl-gettext</package>
++      <package repository="openSUSE 11.3 OSS" version="1.964-3.1">perl-Parse-RecDescent</package>
++      <package repository="openSUSE 11.3 OSS" version="0.29-85.1">perl-X500-DN</package>
++      <package repository="openSUSE 11.3 OSS" version="2.36-67.1">perl-XML-Parser</package>
++      <package repository="openSUSE 11.3 OSS" version="2.18-68.1">perl-XML-Simple</package>
++      <package repository="openSUSE 11.3 OSS" version="2010.04.23.1140-1.6">permissions</package>
++      <package repository="openSUSE 11.3 OSS" version="0.8.0-3.2">pinentry</package>
++      <package repository="openSUSE 11.3 OSS" version="0.23-48.5">pkg-config</package>
++      <package repository="openSUSE 11.3 OSS" version="0.9-20.2">PolicyKit</package>
++      <package repository="openSUSE 11.3 OSS" version="0.96-4.1">polkit</package>
++      <package repository="openSUSE 11.3 OSS" version="0.1_201006171648-1.2">polkit-default-privs</package>
++      <package repository="openSUSE 11.3 Updates" version="2.7.1-2.2.1">postfix</package>
++      <package repository="openSUSE 11.3 OSS" version="3.2.8-16.1">procps</package>
++      <package repository="openSUSE 11.3 OSS" version="22.7-13.1">psmisc</package>
++      <package repository="openSUSE 11.3 OSS" version="3.2.10-1.4">pwdutils</package>
++      <package repository="openSUSE 11.3 OSS" version="0.2.9-2.3">rcc-runtime</package>
++      <package repository="openSUSE 11.3 OSS" version="0.1.6+git20080930-10.1">rpcbind</package>
++      <package repository="openSUSE 11.3 OSS" version="4.8.0-4.4">rpm</package>
++      <package repository="openSUSE 11.3 OSS" version="5.4.0-2.7">rsyslog</package>
++      <package repository="openSUSE 11.3 OSS" version="0.15.0-1.21">satsolver-tools</package>
++      <package repository="openSUSE 11.3 OSS" version="4.1.5-134.1">sed</package>
++      <package repository="openSUSE 11.3 OSS" version="3.6.239-1.2">SuSEfirewall2</package>
++      <package repository="openSUSE 11.3 Updates" version="0.73.7-2.1.1">sysconfig</package>
++      <package repository="openSUSE 11.3 OSS" version="2.1.0-134.1">sysfsutils</package>
++      <package repository="openSUSE 11.3 Updates" version="3.1.1-4.1.1">syslog-ng</package>
++      <package repository="openSUSE 11.3 Updates" version="2.88-10.1.1">sysvinit</package>
++      <package repository="openSUSE 11.3 Updates" version="2.88-10.1.1">sysvinit-tools</package>
++      <package repository="openSUSE 11.3 OSS" version="1.23-1.14">tar</package>
++      <package repository="openSUSE 11.3 OSS" version="7.6-863.1">tcpd</package>
++      <package repository="openSUSE 11.3 OSS" version="5.7-3.39">terminfo-base</package>
++      <package repository="openSUSE 11.3 Updates" version="2010l-0.3.1">timezone</package>
++      <package repository="openSUSE 11.3 OSS" version="157-3.1">udev</package>
++      <package repository="openSUSE 11.3 OSS" version="5.52-148.1">unzip</package>
++      <package repository="openSUSE 11.3 OSS" version="1.14.19-26.1">update-alternatives</package>
++      <package repository="openSUSE 11.3 OSS" version="2.17.2-5.3">util-linux</package>
++      <package repository="openSUSE 11.3 OSS" version="7.2-23.1">vim</package>
++      <package repository="openSUSE 11.3 OSS" version="7.2-23.1">vim-base</package>
++      <package repository="openSUSE 11.3 OSS" version="1.11.4-12.2">wget</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.13-1.7">yast2</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.15-1.7">yast2-bootloader</package>
++      <package repository="openSUSE 11.3 OSS" version="2.18.0-5.1">yast2-branding-openSUSE</package>
++      <package repository="openSUSE 11.3 Updates" version="2.19.3-1.1.1">yast2-core</package>
++      <package repository="openSUSE 11.3 Updates" version="2.19.19-0.1.1">yast2-country</package>
++      <package repository="openSUSE 11.3 Updates" version="2.19.19-0.1.1">yast2-country-data</package>
++      <package repository="openSUSE 11.3 OSS" version="2.18.0-5.1">yast2-dbus-client</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.5-1.6">yast2-firstboot</package>
++      <package repository="openSUSE 11.3 OSS" version="2.17.1-5.2">yast2-hardware-detection</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.20-1.5">yast2-installation</package>
++      <package repository="openSUSE 11.3 OSS" version="2.17.3-12.2">yast2-ldap</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.2-1.4">yast2-ldap-client</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.0-3.1">yast2-libyui</package>
++      <package repository="openSUSE 11.3 OSS" version="2.18.2-5.2">yast2-mouse</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.5-1.6">yast2-ncurses</package>
++      <package repository="openSUSE 11.3 Updates" version="2.19.4-1.1.1">yast2-ncurses-pkg</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.33-1.4">yast2-network</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.7-1.5">yast2-packager</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.1-3.2">yast2-pam</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.1-3.2">yast2-perl-bindings</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.1-1.11">yast2-pkg-bindings</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.1-3.2">yast2-security</package>
++      <package repository="openSUSE 11.3 OSS" version="2.16.0-86.2">yast2-slp</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.15-1.4">yast2-storage</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.2-1.3">yast2-theme-openSUSE</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.0-1.12">yast2-trans-stats</package>
++      <package repository="openSUSE 11.3 OSS" version="2.18.0-6.2">yast2-transfer</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.1-1.6">yast2-update</package>
++      <package repository="openSUSE 11.3 OSS" version="2.19.14-1.6">yast2-users</package>
++      <package repository="openSUSE 11.3 OSS" version="2.16.1-59.1">yast2-xml</package>
++      <package repository="openSUSE 11.3 OSS" version="2.18.5-5.1">yast2-ycp-ui-bindings</package>
++      <package repository="openSUSE 11.3 OSS" version="1.2.3-141.1">zlib</package>
++    </installed_software>
++  </appliance>
++</gallery>
+diff --git a/tests/user/gallery_appliance_testdrive.xml b/tests/user/gallery_appliance_testdrive.xml
+new file mode 100644
+index 0000000..70cb40e
+--- /dev/null
++++ b/tests/user/gallery_appliance_testdrive.xml
+@@ -0,0 +1,13 @@
++<gallery>
++  <testdrive>
++    <url>http://localhost:3002/testdrive/start/22/54/APASSWORD</url>
++    <server>
++      <vnc>
++        <host>localhost</host>
++        <port>5907</port>
++        <password>APASSWORD</password>
++      </vnc>
++    </server>
++  </testdrive>
++</gallery>
++
+diff --git a/tests/user/gallery_appliance_versions.xml b/tests/user/gallery_appliance_versions.xml
+new file mode 100644
+index 0000000..4a25755
+--- /dev/null
++++ b/tests/user/gallery_appliance_versions.xml
+@@ -0,0 +1,12 @@
++<gallery>
++  <appliance>
++    <versions count="6">
++      <version>0.0.1</version>
++      <version>1.0.0</version>
++      <version>2.0.0</version>
++      <version>3.0.0</version>
++      <version>4.0.0</version>
++      <version>5.0.0</version>
++    </versions>
++  </appliance>
++</gallery>
+diff --git a/tests/user/gallery_appliances.xml b/tests/user/gallery_appliances.xml
+new file mode 100644
+index 0000000..2e5cdb2
+--- /dev/null
++++ b/tests/user/gallery_appliances.xml
+@@ -0,0 +1,59 @@
++<gallery>
++  <appliances count="4">
++    <pages>1</pages>
++    <appliance>
++      <id>22</id>
++      <name>Matt's Amazing JeOS</name>
++      <publisher>Matt Barringer</publisher>
++      <username>mbarringer</username>
++      <homepage>http://susestudio.com</homepage>
++      <description>THIS IS AN AWESOME JEOS APPLIANCE DOWNLOAD</description>
++      <ratings>2</ratings>
++      <average_rating>3.0</average_rating>
++      <comments>2</comments>
++      <based_on>11.3</based_on>
++      <date>2010-11-03 13:57:02 UTC</date>
++    </appliance>
++    <appliance>
++      <id>25</id>
++      <name>The Greatest JeOS EVER</name>
++      <publisher>SUSE Studio Team</publisher>
++      <username>steam</username>
++      <homepage></homepage>
++      <description></description>
++      <ratings>0</ratings>
++      <average_rating>0.0</average_rating>
++      <comments>0</comments>
++      <based_on>11.3</based_on>
++      <date>2010-10-15 11:28:00 UTC</date>
++    </appliance>
++    <appliance>
++      <id>20</id>
++      <name>Matt's KDE 4 desktop</name>
++      <publisher>Matt Barringer</publisher>
++      <username>mbarringer</username>
++      <homepage>http://kde.org</homepage>
++      <description>This is a KDE 4 descktop</description>
++      <ratings>0</ratings>
++      <average_rating>0.0</average_rating>
++      <comments>2</comments>
++      <based_on>11.3</based_on>
++      <date>2010-10-07 14:01:04 UTC</date>
++    </appliance>
++    <appliance>
++      <id>24</id>
++      <name>LAMP Server</name>
++      <publisher>Matt Barringer</publisher>
++      <username>mbarringer</username>
++      <homepage>http://susestudio.com</homepage>
++      <description>This is a LAMP server.
++
++It provides Linux, Apache, MySQL, and Perl.</description>
++      <ratings>0</ratings>
++      <average_rating>0.0</average_rating>
++      <comments>0</comments>
++      <based_on>11.3</based_on>
++      <date>2010-10-14 14:09:05 UTC</date>
++    </appliance>
++  </appliances>
++</gallery>
+diff --git a/tests/user/generic_error_example.xml b/tests/user/generic_error_example.xml
+new file mode 100644
+index 0000000..e9e9787
+--- /dev/null
++++ b/tests/user/generic_error_example.xml
+@@ -0,0 +1,4 @@
++<error>
++  <code>invalid_version</code>
++  <message>Version "10.0.0" is invalid.</message>
++</error>
+diff --git a/tests/user/gpg_key.xml b/tests/user/gpg_key.xml
+new file mode 100644
+index 0000000..80afd53
+--- /dev/null
++++ b/tests/user/gpg_key.xml
+@@ -0,0 +1,40 @@
++<gpg_key>
++  <id>27</id>
++  <name>test1</name>
++  <target>rpm</target>
++  <key>
++    <![CDATA[-----BEGIN PGP PUBLIC KEY BLOCK-----
++Version: GnuPG v1.2.1 (GNU/Linux)
++
++mQGiBEIfIY8RBACIjFavOQNbs4bjTtOblq4X5/oxuTJtv41nfqSFNeUAQke0qoxx
++AUlBesWxDsOXp5VppgNEA07hGjPvzoxabLAsTccQplvHMNzmRezyukYrSTVR/F7g
++ywpvlhaAFkL9jZxodXzWKk2cmBLVWvuyzlLEUBeijm2amyEHcIGAczxPawCgmVcM
++9WpA6SOKivd9qTXK2XP+9BUD/2xV4OR4L7q8CSiaDMwPLo6P6D6VDc9LpVy16Wmu
++iYPFJIcIpp309biKZhGZgd+gHDhld9EJcZ3A2v43GY/xCdJqZ7Uh5QIGDafnil87
++2AbMIBYpcOpvAshTM10S3Qj06pIQE47oONZT5A80O/hn+Yd8ySCEswpbWCmtAxnc
++iNw3A/0Qk/bKrhT6J9Um2JhMfxx/nB80mM+Jlsn58B8i4sjrIVdzc3b45Y2wbXN3
++uVGuvvAFolAco3cpVy3oY1wMVuh8UlJFNESmxZL/Z7BXyKhiKUZrNxEvQt9OtD1F
++d36ur8Ky8zFE5GL903Nx/dEVBvIDq2/2K3Wy9Yq3YIC0PW7fkrQlQ2VudE9TLTQg
++a2V5IDxjZW50b3MtNGtleUBjZW50b3Mub3JnPohfBBMRAgAfBQJCHyGPBQkSzAMA
++BAsHAwIDFQIDAxYCAQIeAQIXgAAKCRClPQurRD4YISH0AJ9zmx2JPGt8ELKo3aE0
++YoGg6EYipwCdH3kRVJHQtDeRs/5v5Ghn92XZS4KITAQTEQIADAUCQh8hxAWDEswC
++ywAKCRA4whYWOWygpCumAJwOseF0mAV+j/0kGrKXf/FKboFScgCdEITVqtB1CCyn
+++q+IqnCmgEF8rYy5Ag0EQh8hqhAIAKwNu60J+AnfVjNk0eN26sKBQOHFVQX9M3bd
++NBVWruocb7dro6DG4daPVB66ZI9RqBusll0jz5nUhBO3GZ3rn/KLVhMO2uCtvdcw
++WYtY6188lO6lOm3aYadIqafcPPiiLnF3zm/E8hI/trbPpaoW1dFBOiSlOY4bSpSC
++nTuHYd5fjYu77wQhnSsl19XfqwuvHQKW1vhXCaM2GrsLA5tgjLOlJhYJ4yPY2LTo
++yxoWC/JMMM0Vwi7BaVoa/G2uamC6sL5f6KXei5QftemUvw1uM/2fkLbuHtwETq6Z
++yUZlsL1H5K5G4h+GDVByBF6Y2P1csi7oXK13sdzhkewLaMjmah8ABAsH/3zhD0Gy
++1jlMs9dGKSi9kq3jcUE/4o3vvjOPbxqT9psJu0jMEAfUVCWX9BWgZXyE2u+nBxcY
++AnNyqdmQzs6wTgJWGeGKpyC1jIKtO888RpPShvXtt/aNF4LaoielWZY9xu5oYEhn
++mBoww3VTbVxFNaPjglZOWnTxWfysHwG0H/dnXMp1sJjfdNsiB7zNniRRurlIiy0x
++hQSkDLe4tUr9Q9u4ztZKbwVX/fBzJC/u4Smi4VYx+HfOAP3OqzcGKNcb68GpIVo3
++1RUQq1JqpPSM5U41kW8u+S5n+zhjZsb/Ix3ks18gI8wz5u5yzfGacqp65NLisqVe
++OKEf/MQ1xWytG4SITAQYEQIADAUCQh8hqgUJEswDAAAKCRClPQurRD4YIXC1AKCF
++3t5xKJnEXJfgvhvldOzDIFjajwCgkX/MZI0O0SxYQAc2hEQJqCI/LJU=
++=Qsai
++-----END PGP PUBLIC KEY BLOCK-----
++]]>
++  </key>
++
++</gpg_key>
+diff --git a/tests/user/gpg_keys.xml b/tests/user/gpg_keys.xml
+new file mode 100644
+index 0000000..082b34b
+--- /dev/null
++++ b/tests/user/gpg_keys.xml
+@@ -0,0 +1,43 @@
++<gpg_keys>
++  <gpg_key>
++    <id>27</id>
++    <name>test1</name>
++    <target>rpm</target>
++    <key>
++      <![CDATA[-----BEGIN PGP PUBLIC KEY BLOCK-----
++Version: GnuPG v1.2.1 (GNU/Linux)
++
++mQGiBEIfIY8RBACIjFavOQNbs4bjTtOblq4X5/oxuTJtv41nfqSFNeUAQke0qoxx
++AUlBesWxDsOXp5VppgNEA07hGjPvzoxabLAsTccQplvHMNzmRezyukYrSTVR/F7g
++ywpvlhaAFkL9jZxodXzWKk2cmBLVWvuyzlLEUBeijm2amyEHcIGAczxPawCgmVcM
++9WpA6SOKivd9qTXK2XP+9BUD/2xV4OR4L7q8CSiaDMwPLo6P6D6VDc9LpVy16Wmu
++iYPFJIcIpp309biKZhGZgd+gHDhld9EJcZ3A2v43GY/xCdJqZ7Uh5QIGDafnil87
++2AbMIBYpcOpvAshTM10S3Qj06pIQE47oONZT5A80O/hn+Yd8ySCEswpbWCmtAxnc
++iNw3A/0Qk/bKrhT6J9Um2JhMfxx/nB80mM+Jlsn58B8i4sjrIVdzc3b45Y2wbXN3
++uVGuvvAFolAco3cpVy3oY1wMVuh8UlJFNESmxZL/Z7BXyKhiKUZrNxEvQt9OtD1F
++d36ur8Ky8zFE5GL903Nx/dEVBvIDq2/2K3Wy9Yq3YIC0PW7fkrQlQ2VudE9TLTQg
++a2V5IDxjZW50b3MtNGtleUBjZW50b3Mub3JnPohfBBMRAgAfBQJCHyGPBQkSzAMA
++BAsHAwIDFQIDAxYCAQIeAQIXgAAKCRClPQurRD4YISH0AJ9zmx2JPGt8ELKo3aE0
++YoGg6EYipwCdH3kRVJHQtDeRs/5v5Ghn92XZS4KITAQTEQIADAUCQh8hxAWDEswC
++ywAKCRA4whYWOWygpCumAJwOseF0mAV+j/0kGrKXf/FKboFScgCdEITVqtB1CCyn
+++q+IqnCmgEF8rYy5Ag0EQh8hqhAIAKwNu60J+AnfVjNk0eN26sKBQOHFVQX9M3bd
++NBVWruocb7dro6DG4daPVB66ZI9RqBusll0jz5nUhBO3GZ3rn/KLVhMO2uCtvdcw
++WYtY6188lO6lOm3aYadIqafcPPiiLnF3zm/E8hI/trbPpaoW1dFBOiSlOY4bSpSC
++nTuHYd5fjYu77wQhnSsl19XfqwuvHQKW1vhXCaM2GrsLA5tgjLOlJhYJ4yPY2LTo
++yxoWC/JMMM0Vwi7BaVoa/G2uamC6sL5f6KXei5QftemUvw1uM/2fkLbuHtwETq6Z
++yUZlsL1H5K5G4h+GDVByBF6Y2P1csi7oXK13sdzhkewLaMjmah8ABAsH/3zhD0Gy
++1jlMs9dGKSi9kq3jcUE/4o3vvjOPbxqT9psJu0jMEAfUVCWX9BWgZXyE2u+nBxcY
++AnNyqdmQzs6wTgJWGeGKpyC1jIKtO888RpPShvXtt/aNF4LaoielWZY9xu5oYEhn
++mBoww3VTbVxFNaPjglZOWnTxWfysHwG0H/dnXMp1sJjfdNsiB7zNniRRurlIiy0x
++hQSkDLe4tUr9Q9u4ztZKbwVX/fBzJC/u4Smi4VYx+HfOAP3OqzcGKNcb68GpIVo3
++1RUQq1JqpPSM5U41kW8u+S5n+zhjZsb/Ix3ks18gI8wz5u5yzfGacqp65NLisqVe
++OKEf/MQ1xWytG4SITAQYEQIADAUCQh8hqgUJEswDAAAKCRClPQurRD4YIXC1AKCF
++3t5xKJnEXJfgvhvldOzDIFjajwCgkX/MZI0O0SxYQAc2hEQJqCI/LJU=
++=Qsai
++-----END PGP PUBLIC KEY BLOCK-----
++]]>
++    </key>
++
++  </gpg_key>
++</gpg_keys>
++
+diff --git a/tests/user/repositories.xml b/tests/user/repositories.xml
+new file mode 100644
+index 0000000..680bd2a
+--- /dev/null
++++ b/tests/user/repositories.xml
+@@ -0,0 +1,13 @@
++<repositories>                                                                                                                                                                  
++  <repository>                                                                                                                                                                  
++    <id>7</id>                                                                                                                                                                  
++    <name>Moblin Base</name>                                                                                                                                                    
++    <type>rpm-md</type>                                                                                                                                                         
++    <base_system>11.1</base_system>                                                                                                                                             
++    <base_url>http://download.opensuse.org/repositories/Moblin:/Base/openSUSE_11.1</base_url>                                                                                   
++    <matches>                                                                                                                                                                   
++      <repository_name>moblin base</repository_name>                                                                                                                            
++      <repository_base_url>http://download.opensuse.org/repositories/moblin:/base/opensuse_11.1</repository_base_url>                                                           
++    </matches>                                                                                                                                                                  
++  </repository>                                                                                                                                                                 
++</repositories>
+diff --git a/tests/user/repository.xml b/tests/user/repository.xml
+new file mode 100644
+index 0000000..789cd65
+--- /dev/null
++++ b/tests/user/repository.xml
+@@ -0,0 +1,7 @@
++<repository>
++  <id>7</id>
++  <name>Moblin Base</name>
++  <type>rpm-md</type>
++  <base_system>11.1</base_system>
++  <base_url>http://download.opensuse.org/repositories/Moblin:/Base/openSUSE_11.1</base_url>
++</repository>
+diff --git a/tests/user/rpm.xml b/tests/user/rpm.xml
+new file mode 100644
+index 0000000..ba034de
+--- /dev/null
++++ b/tests/user/rpm.xml
+@@ -0,0 +1,7 @@
++<rpm>
++  <id>54</id>
++  <filename>fate-1.3.10-14.3.i586.rpm</filename>
++  <size>587500</size>
++  <archive>false</archive>
++  <base_system>SLED11</base_system>
++</rpm>
+diff --git a/tests/user/rpms.xml b/tests/user/rpms.xml
+new file mode 100644
+index 0000000..0c26515
+--- /dev/null
++++ b/tests/user/rpms.xml
+@@ -0,0 +1,8 @@
++<rpms base_system="SLED11">
++  <rpm>
++    <id>54</id>
++    <filename>fate-1.3.10-14.3.i586.rpm</filename>
++    <size>587500</size>
++    <archive>false</archive>
++  </rpm>
++</rpms>
+diff --git a/tests/user/running_build.xml b/tests/user/running_build.xml
+new file mode 100644
+index 0000000..c679e14
+--- /dev/null
++++ b/tests/user/running_build.xml
+@@ -0,0 +1,7 @@
++<running_build>
++  <id>38</id>
++  <state>running</state>
++  <percent>0</percent>
++  <time_elapsed>5</time_elapsed>
++  <message>Fetching appliance configuration</message>
++</running_build>
+diff --git a/tests/user/running_builds.xml b/tests/user/running_builds.xml
+new file mode 100644
+index 0000000..b33550b
+--- /dev/null
++++ b/tests/user/running_builds.xml
+@@ -0,0 +1,9 @@
++<running_builds>
++  <running_build>
++    <id>38</id>
++    <state>running</state>
++    <percent>0</percent>
++    <time_elapsed>5</time_elapsed>
++    <message>Fetching appliance configuration</message>
++  </running_build>
++</running_builds>
+diff --git a/tests/user/sharing.xml b/tests/user/sharing.xml
+new file mode 100644
+index 0000000..1cabd9c
+--- /dev/null
++++ b/tests/user/sharing.xml
+@@ -0,0 +1,6 @@
++<appliance>
++  <id>22</id>
++  <read_users count="1">
++    <username>steam</username>
++  </read_users>
++</appliance>
+diff --git a/tests/user/software.xml b/tests/user/software.xml
+new file mode 100644
+index 0000000..1c269f8
+--- /dev/null
++++ b/tests/user/software.xml
+@@ -0,0 +1,33 @@
++<software appliance_id="42">
++  <package>aaa_base</package>
++  <package>dhcpcd</package>
++  <package>hwinfo</package>
++  <package>insserv</package>
++  <package>kbd</package>
++  <package>licenses</package>
++  <package>mkinitrd</package>
++  <package>module-init-tools</package>
++  <package>netcfg</package>
++  <package>openssh</package>
++  <package>procps</package>
++  <package>pwdutils</package>
++  <package>rpm</package>
++  <package>openSUSE-release</package>
++  <package>openSUSE-build-key</package>
++  <package>sysconfig</package>
++  <package>syslog-ng</package>
++  <package>grub</package>
++  <package>branding-openSUSE</package>
++  <package>rpcbind</package>
++  <package>PolicyKit</package>
++  <package>polkit-default-privs</package>
++  <package>SuSEfirewall2</package>
++  <package version="7.2-7.3">vim</package>
++  <package version="2.6.27.7-9.1">kernel-default</package>
++  <pattern>x11</pattern>
++  <package>MozillaFirefox</package>
++  <package>kde4-yakuake</package>
++  <pattern>laptop</pattern>
++  <package>fate</package>
++</software>
++
+diff --git a/tests/user/software_change.xml b/tests/user/software_change.xml
+new file mode 100644
+index 0000000..a1fb25b
+--- /dev/null
++++ b/tests/user/software_change.xml
+@@ -0,0 +1,10 @@
++<success>
++  <details>
++    <status>
++      <state>changed</state>
++      <packages_added>13</packages_added>
++      <packages_removed>0</packages_removed>
++    </status>
++  </details>
++</success>
++
+diff --git a/tests/user/software_map.xml b/tests/user/software_map.xml
+new file mode 100644
+index 0000000..904ae5e
+--- /dev/null
++++ b/tests/user/software_map.xml
+@@ -0,0 +1,707 @@
++<software_map appliance_id="42">
++  <repository base_url="http://download.opensuse.org/distribution/11.1/repo/oss" name="openSUSE 11.1 OSS" id="1">
++    <software>
++      <package version="0.742-32.82">3ddiag</package>
++      <package version="4.13-1326.19">a2ps</package>
++      <package version="2.2.47-27.5">acl</package>
++      <package version="1.0.6-89.6">acpid</package>
++      <package version="1.0.18-8.7">alsa</package>
++      <package version="1.0.17-1.37">alsa-oss</package>
++      <package version="1.0.18-6.12">alsa-plugins</package>
++      <package version="1.0.18-6.12">alsa-plugins-pulse</package>
++      <package version="1.0.18-6.4">alsa-utils</package>
++      <package version="2.3.1-5.9">apparmor-docs</package>
++      <package version="2.3.1-5.10">apparmor-parser</package>
++      <package version="2.3-42.5">apparmor-profiles</package>
++      <package version="2.3.1-5.5">apparmor-utils</package>
++      <package version="0.60.6-26.1">aspell</package>
++      <package version="6.0-158.8">aspell-en</package>
++      <package version="3.1.8-1068.17">at</package>
++      <package version="1.24.0-4.1">atk</package>
++      <package version="1.7.7-5.1">audit</package>
++      <package version="1.7.7-5.1">audit-libs</package>
++      <package version="2.17.23-1.6">autoyast2-installation</package>
++      <package version="3.2-141.10">bash</package>
++      <package version="3.2-141.10">bash-doc</package>
++      <package version="1.06-838.76">bc</package>
++      <package version="2.19-9.3">binutils</package>
++      <package version="1.0.0-1.17">blktrace</package>
++      <package version="0.3-225.29">bootcycle</package>
++      <package version="3.3-146.40">bootsplash</package>
++      <package version="3.1-47.6">bootsplash-branding-openSUSE</package>
++      <package version="11.1-1.10">branding-openSUSE</package>
++      <package version="11.1-11.2">bundle-lang-common-ar</package>
++      <package version="11.1-11.3">bundle-lang-gnome-ar</package>
++      <package version="1.0.5-34.5">bzip2</package>
++      <package version="1.2-1.87">cabextract</package>
++      <package version="1.8.0-5.1">cairo</package>
++      <package version="IIIalpha9.8-691.10">cdparanoia</package>
++      <package version="1.1.8-3.31">cdrkit-cdrtools-compat</package>
++      <package version="0.9.5-63.47">check</package>
++      <package version="2.2-1.20">checkmedia</package>
++      <package version="0.9.21-1.6">clucene-core</package>
++      <package version="0.1.0-28.14">command-not-found</package>
++      <package version="6.12-32.10">coreutils</package>
++      <package version="2.9-75.35">cpio</package>
++      <package version="4.3-34.168">cpp</package>
++      <package version="4.3.3_20081022-9.5">cpp43</package>
++      <package version="2.8.12-55.1">cracklib</package>
++      <package version="2.8.12-43.23">cracklib-dict-full</package>
++      <package version="4.1-194.28">cron</package>
++      <package version="1.0.5_SVNr46-57.8">cryptsetup</package>
++      <package version="0.1.0-158.10">cups-autoconfig</package>
++      <package version="1.3.9-2.12">cups-drivers</package>
++      <package version="4.5.20-94.17">db-utils</package>
++      <package version="2.26-1.41">dejavu</package>
++      <package version="3.4-103.5">deltarpm</package>
++      <package version="11.1-36.10">desktop-data-openSUSE</package>
++      <package version="0.15-1.119">desktop-file-utils</package>
++      <package version="1.02.27-7.1">device-mapper</package>
++      <package version="3.2.3-44.1">dhcpcd</package>
++      <package version="1.1-27.24">dialog</package>
++      <package version="2.8.7-143.9">diffutils</package>
++      <package version="1.2.3-6.1">DirectFB</package>
++      <package version="1.0.2-1.39">dirmngr</package>
++      <package version="1.0.0.rc15-4.5">dmraid</package>
++      <package version="2.11-121.46">dosfstools</package>
++      <package version="1.41.1-11.9">e2fsprogs</package>
++      <package version="0.2-1001.9">ed</package>
++      <package version="0.4.2-42.126">efont-unicode</package>
++      <package version="2.1.0-115.33">eject</package>
++      <package version="0.137-3.11">elfutils</package>
++      <package version="1.4.2-16.55">enchant</package>
++      <package version="6-78.9">ethtool</package>
++      <package version="2.0.1-88.10">expat</package>
++      <package version="2.7.0-130.1">fam</package>
++      <package version="2.1-919.2">fbset</package>
++      <package version="4.24-43.1">file</package>
++      <package version="11.1-2.3">filesystem</package>
++      <package version="1.42-242.8">fillup</package>
++      <package version="2007.8.9-186.22">filters</package>
++      <package version="4.4.0-38.27">findutils</package>
++      <package version="1.3-104.52">finger</package>
++      <package version="2.6.0-8.1">fontconfig</package>
++      <package version="20080121-25.34">fonts-config</package>
++      <package version="2.3.7-24.1">ft2demos</package>
++      <package version="2.7.2-61.14">fuse</package>
++      <package version="3.1.6-1.44">gawk</package>
++      <package version="4.3-34.168">gcc-gij</package>
++      <package version="4.3.3_20081022-9.2">gcc43-gij</package>
++      <package version="2.24.0-2.15">gconf2</package>
++      <package version="2.24-13.13">gconf2-branding-openSUSE</package>
++      <package version="2.0.36.RC1-52.14">gd</package>
++      <package version="1.8.3-371.8">gdbm</package>
++      <package version="1.1.8-3.31">genisoimage</package>
++      <package version="0.17-60.5">gettext-runtime</package>
++      <package version="4.1.19-2.1">gfxboot</package>
++      <package version="4.1.19-2.1">gfxboot-branding-openSUSE</package>
++      <package version="4.1.6-10.1">giflib</package>
++      <package version="2.16-44.6">glib2-branding-openSUSE</package>
++      <package version="4.2.3-10.3">gmp</package>
++      <package version="2.24.0-1.18">gnome-icon-theme</package>
++      <package version="2.24.1-6.1">gnome-keyring</package>
++      <package version="2.24.0-4.1">gnome-vfs2</package>
++      <package version="0.1h-565.74">gpart</package>
++      <package version="1.20.1-452.1">gpm</package>
++      <package version="2.20.2-6.14">graphviz</package>
++      <package version="2.20.2-6.23">graphviz-gd</package>
++      <package version="2.20.2-6.23">graphviz-gnome</package>
++      <package version="2.5.2-90.28">grep</package>
++      <package version="1.18.1.1-167.3">groff</package>
++      <package version="0.97-156.3">grub</package>
++      <package version="0.10.21-3.11">gstreamer-0_10</package>
++      <package version="11.1-1.12">gtk2-branding-openSUSE</package>
++      <package version="2.16.1-4.1">gtk2-engines</package>
++      <package version="11.1-1.12">gtk2-theme-openSUSE</package>
++      <package version="1.0.2-2.19">gvfs</package>
++      <package version="1.0.2-2.19">gvfs-backends</package>
++      <package version="1.0.2-2.19">gvfs-fuse</package>
++      <package version="1.3.12-68.36">gzip</package>
++      <package version="8.9-1.33">hdparm</package>
++      <package version="0.10-102.14">hicolor-icon-theme</package>
++      <package version="2.8.7-7.1">hplip</package>
++      <package version="2.8.7-7.1">hplip-hpijs</package>
++      <package version="1.2.7-1.28">hunspell</package>
++      <package version="1.2.7-1.28">hunspell-tools</package>
++      <package version="15.20-1.6">hwinfo</package>
++      <package version="1.1.8-3.31">icedax</package>
++      <package version="1.2.36-1.20">icewm</package>
++      <package version="1.2.36-1.14">icewm-lite</package>
++      <package version="1.2.1-409.9">ifnteuro</package>
++      <package version="0.28-210.9">ifplugd</package>
++      <package version="1.0.1-40.47">IlmBase</package>
++      <package version="4.12-1.85">info</package>
++      <package version="0.5-55.45">initviocons</package>
++      <package version="1.12.0-22.15">insserv</package>
++      <package version="1.2.1-409.9">intlfnts</package>
++      <package version="2.6.25-41.24">iproute2</package>
++      <package version="1.4.1.91-1.23">iptables</package>
++      <package version="ss021109-292.20">iputils</package>
++      <package version="0.9.18-196.54">irda</package>
++      <package version="3.3.02-1.82">ispell</package>
++      <package version="3.3.02-1.82">ispell-american</package>
++      <package version="9.23-1.37">jarnal</package>
++      <package version="1.5.0.0-56.61">java-1_5_0-gcj-compat</package>
++      <package version="3.5-92.49">joe</package>
++      <package version="1.14.1-16.7">kbd</package>
++      <package version="4.1.3-1.9">kde4-filesystem</package>
++      <package version="2.9.4-8.47">kde4-yakuake</package>
++      <package version="3.5.10-21.9">kdelibs3</package>
++      <package version="3.5.10-21.9">kdelibs3-default-style</package>
++      <package version="2.6.27.7-9.1">kernel-default</package>
++      <package version="2.6.27.7-9.1">kernel-default-base</package>
++      <package version="2.6.27.7-9.1">kernel-default-extra</package>
++      <package version="1.2-107.4">keyutils</package>
++      <package version="1.2-107.4">keyutils-libs</package>
++      <package version="1.4.1-708.14">klogd</package>
++      <package version="93t-6.5">ksh</package>
++      <package version="2.4.11-117.41">ksymoops</package>
++      <pattern version="11.1">laptop</pattern>
++      <package version="424b-1.29">less</package>
++      <package version="2.2.47-27.5">libacl</package>
++      <package version="0.3.104-104.47">libaio</package>
++      <package version="2.3-50.18">libapparmor1</package>
++      <package version="2.5.5-5.9">libarchive2</package>
++      <package version="2.3.20-10.45">libart_lgpl</package>
++      <package version="0.137-3.11">libasm1</package>
++      <package version="1.0.18-8.7">libasound2</package>
++      <package version="1.24.0-4.1">libatk-1_0-0</package>
++      <package version="1.41.1-11.9">libblkid1</package>
++      <package version="2.1.0.342-120.1">libblocxx6</package>
++      <package version="2.24.0-1.19">libbonobo</package>
++      <package version="2.24.0-1.34">libbonoboui</package>
++      <package version="1.0.5-34.5">libbz2-1</package>
++      <package version="2.11-2.11">libcap2</package>
++      <package version="0.80-5.26">libcdio7</package>
++      <package version="0.80-5.26">libcdio_cdda0</package>
++      <package version="0.80-5.26">libcdio_paranoia0</package>
++      <package version="1.41.1-11.9">libcom_err2</package>
++      <package version="1.0.5_SVNr46-57.8">libcryptsetup0</package>
++      <package version="4.5.20-94.17">libdb-4_5</package>
++      <package version="2.4.1-1.8">libdrm</package>
++      <package version="0.137-3.11">libdw1</package>
++      <package version="0.137-3.11">libelf1</package>
++      <package version="1.4.2-16.55">libenchant1</package>
++      <package version="1.03-1.3">liberation-fonts</package>
++      <package version="0.2.39-4.1">libesd0</package>
++      <package version="1.4.5-24.23">libevent-1_4-2</package>
++      <package version="0.6.17-1.7">libexif</package>
++      <package version="2.0.1-88.10">libexpat1</package>
++      <package version="1.41.1-11.9">libext2fs2</package>
++      <package version="1.2.1-68.8">libFLAC8</package>
++      <package version="2.7.2-61.14">libfuse2</package>
++      <package version="4.3.3_20081022-9.5">libgcc43</package>
++      <package version="4.3.3_20081022-9.2">libgcj43</package>
++      <package version="4.3.3_20081022-9.2">libgcj43-jar</package>
++      <package version="1.4.1-4.1">libgcrypt11</package>
++      <package version="2.6.3-1.41">libglade2</package>
++      <package version="2.24.1-1.35">libgnome</package>
++      <package version="1.6-6.10">libgpg-error0</package>
++      <package version="0.1-6.14">libgssglue1</package>
++      <package version="0.10.21-3.11">libgstreamer-0_10-0</package>
++      <package version="1.0.2-2.19">libgvfscommon0</package>
++      <package version="4.0-7.1">libicu</package>
++      <package version="0.8.11-1.27">libidl</package>
++      <package version="1.10-2.14">libidn</package>
++      <package version="0.2.11-30.9">libieee1284</package>
++      <package version="1.900.1-133.16">libjasper</package>
++      <package version="6.2.0-843.47">libjpeg</package>
++      <package version="1.0.4-1.17">libksba</package>
++      <package version="2.4.12-5.3">libldap-2_4-2</package>
++      <package version="0.1.2-1.29">libldapcpp1</package>
++      <package version="2.2.6-1.20">libltdl7</package>
++      <package version="4.32.7-1.34">liblzmadec0</package>
++      <package version="2.03-2.29">liblzo2-2</package>
++      <package version="1.0.10-45.59">libmng</package>
++      <package version="2.3.2-3.9">libmpfr1</package>
++      <package version="5.6-89.10">libncurses5</package>
++      <package version="5.6-89.10">libncurses6</package>
++      <package version="1.1.2.1-140.27">libnet</package>
++      <package version="10.26.44-98.12">libnetpbm10</package>
++      <package version="2.0.2-72.47">libnscd</package>
++      <package version="1.0.4-1.5">libnsssharedhelper0</package>
++      <package version="1.1.3-86.33">libogg0</package>
++      <package version="0.3.15-1.28">liboil</package>
++      <package version="0.6.15-4.17">libopenct1</package>
++      <package version="4.2.0-40.18">libphonon4</package>
++      <package version="1.4.18-28.28">libraptor1</package>
++      <package version="0.9.16-1.47">librasqal1</package>
++      <package version="5.2-141.10">libreadline5</package>
++      <package version="1.0.8-1.46">libredland0</package>
++      <package version="0.3.0.5-107.47">libreiserfs</package>
++      <package version="0.18-1.18">librpcsecgss</package>
++      <package version="0.1.4-1.6">libsamplerate</package>
++      <package version="2.0.71-3.38">libselinux1</package>
++      <package version="2.10.6-10.46">libsensors3</package>
++      <package version="2.0.32-5.38">libsepol1</package>
++      <package version="2.0.2-10.9">libsmbios2</package>
++      <package version="2.1.1-9.19">libsoprano4</package>
++      <package version="2.24.1-1.13">libsoup</package>
++      <package version="2.24.1-1.13">libsoup-2_4-1</package>
++      <package version="1.1.99.91-1.30">libspeex</package>
++      <package version="3.6.4-1.8">libsqlite3-0</package>
++      <package version="4.3.3_20081022-9.5">libstdc++43</package>
++      <package version="0.5.11-39.11">libstrigi0</package>
++      <package version="1.5-1.26">libtasn1</package>
++      <package version="1.5-1.26">libtasn1-3</package>
++      <package version="1.0.beta2-3.94">libtheora0</package>
++      <package version="0.1.9-4.6">libtirpc1</package>
++      <package version="0.1.12-136.10">libusb-0_1-4</package>
++      <package version="1.41.1-11.9">libuuid1</package>
++      <package version="0.4.0-174.16">libvisual</package>
++      <package version="1.2.0-78.13">libvorbis</package>
++      <package version="1.1-13.32">libx86</package>
++      <package version="3.0.1-25.20">libxcrypt</package>
++      <package version="2.7.1-9.1">libxml2-python</package>
++      <package version="1.1.24-19.1">libxslt</package>
++      <package version="0.9-4.19">libzio</package>
++      <package version="20070810-2.85">licenses</package>
++      <package version="1.5.1-1.12">limal</package>
++      <package version="1.5.4-1.4">limal-ca-mgm</package>
++      <package version="1.5.4-1.4">limal-ca-mgm-perl</package>
++      <package version="1.5.1-1.12">limal-nfs-server</package>
++      <package version="1.5.1-1.12">limal-nfs-server-perl</package>
++      <package version="1.5.1-1.12">limal-perl</package>
++      <package version="2.5.0-135.8">linux-atm-lib</package>
++      <package version="3.37-1.5">login</package>
++      <package version="3.7.7-9.11">logrotate</package>
++      <package version="4.80-1.22">lsof</package>
++      <package version="0.21-13.9">lsscsi</package>
++      <package version="1.5-725.7">lukemftp</package>
++      <package version="2.02.39-8.8">lvm2</package>
++      <package version="4.32.7-1.34">lzma</package>
++      <package version="12.2-141.9">mailx</package>
++      <package version="2.5.2-17.3">man</package>
++      <package version="3.13-2.5">man-pages</package>
++      <package version="2003a-2.22">man-pages-posix</package>
++      <package version="10.2-243.45">manufacturer-PPDs</package>
++      <package version="1.14-70.32">master-boot-code</package>
++      <package version="2.7.19-1244.29">metamail</package>
++      <package version="1.17-102.15">microcode_ctl</package>
++      <package version="1.0.7s-70.41">mingetty</package>
++      <package version="2.4-34.1">mkinitrd</package>
++      <package version="4.7.1-20.47">mozilla-nspr</package>
++      <package version="3.12.0-54.11">mozilla-nss</package>
++      <package version="3.0.3-3.11">MozillaFirefox-branding-openSUSE</package>
++      <package version="1.2.0-50.129">mpt-status</package>
++      <package version="3.9.11-165.18">mtools</package>
++      <package version="5.6-89.10">ncurses-utils</package>
++      <package version="1.60-725.5">net-tools</package>
++      <package version="1.10-1005.9">netcat</package>
++      <package version="11.1-1.14">netcfg</package>
++      <package version="10.26.44-98.12">netpbm</package>
++      <package version="0.20-1.110">nfsidmap</package>
++      <package version="1.5012-2.10">ntfs-3g</package>
++      <package version="1.13.1-76.33">ntfsprogs</package>
++      <package version="1.1-34.112">numlockx</package>
++      <package version="0.4.1-1.12">obex-data-server</package>
++      <package version="0.6.15-4.17">openct</package>
++      <package version="1.6.1-83.10">OpenEXR</package>
++      <package version="2.4.12-5.3">openldap2-client</package>
++      <package version="1.3-157.41">openobex</package>
++      <package version="5.1p1-40.15">openssh</package>
++      <package version="5.1p1-40.15">openssh-askpass</package>
++      <package version="1.0-3.18">openSUSE-build-key</package>
++      <package version="10.3.1-4.80">opensuse-codecs-installer</package>
++      <package version="11.1-1.19">openSUSE-release</package>
++      <package version="11.1-1.19">openSUSE-release-ftp</package>
++      <package version="2.14.16-1.23">orbit2</package>
++      <package version="4.1.3-4.1">oxygen-icon-theme</package>
++      <package version="4.1.3-4.1">oxygen-icon-theme-scalable</package>
++      <package version="1.0.2-13.3">pam</package>
++      <package version="0.68-1.3">pam-config</package>
++      <package version="11.1-5.1">pam-modules</package>
++      <package version="2.3-2.69">pam_apparmor</package>
++      <package version="3.4-135.9">pax</package>
++      <package version="3.0.1-1.26">pciutils</package>
++      <package version="2008.11.26-2.4">pciutils-ids</package>
++      <package version="015-2.4">pcmciautils</package>
++      <package version="7.8-1.26">pcre</package>
++      <package version="1.4.102-1.55">pcsc-lite</package>
++      <package version="1.21-73.8">perl-Config-Crontab</package>
++      <package version="0.12-132.7">perl-Crypt-SmbHash</package>
++      <package version="0.57-1.52">perl-Crypt-SSLeay</package>
++      <package version="1.14-11.79">perl-DBD-SQLite</package>
++      <package version="1.607-1.34">perl-DBI</package>
++      <package version="1.01-436.82">perl-Digest-HMAC</package>
++      <package version="1.5-1.87">perl-Digest-MD4</package>
++      <package version="2.11-1.87">perl-Digest-SHA1</package>
++      <package version="0.99.3-1.87">perl-File-Tail</package>
++      <package version="1.05-91.163">perl-gettext</package>
++      <package version="3.56-1.84">perl-HTML-Parser</package>
++      <package version="3.20-1.57">perl-HTML-Tagset</package>
++      <package version="2.3-50.18">perl-libapparmor</package>
++      <package version="5.816-2.6">perl-libwww-perl</package>
++      <package version="0.43-1.86">perl-Net-Daemon</package>
++      <package version="0.02-604.86">perl-NetxAP</package>
++      <package version="1.96.0-1.20">perl-Parse-RecDescent</package>
++      <package version="0.2019-30.71">perl-PlRPC</package>
++      <package version="0.60-28.25">perl-RPC-XML</package>
++      <package version="2.30-135.9">perl-TermReadKey</package>
++      <package version="1.16-51.71">perl-TermReadLine-Gnu</package>
++      <package version="1.16-71.85">perl-TimeDate</package>
++      <package version="1.37-1.44">perl-URI</package>
++      <package version="0.29-78.6">perl-X500-DN</package>
++      <package version="1.66-1.65">perl-XML-LibXML</package>
++      <package version="0.13-69.87">perl-XML-LibXML-Common</package>
++      <package version="1.09-1.87">perl-XML-NamespaceSupport</package>
++      <package version="2.36-1.75">perl-XML-Parser</package>
++      <package version="0.96-1.24">perl-XML-SAX</package>
++      <package version="2.18-1.75">perl-XML-Simple</package>
++      <package version="0.604-1.57">perl-XML-Writer</package>
++      <package version="1.13-74.7">perl-XML-XPath</package>
++      <package version="2008.11.25-1.5">permissions</package>
++      <package version="4.2.0-40.18">phonon</package>
++      <package version="4.2.0-40.18">phonon-backend-gstreamer-0_10</package>
++      <package version="0.7.5-61.14">pinentry</package>
++      <package version="0.23-1.69">pkg-config</package>
++      <package version="0.1-15.4">pm-profiler</package>
++      <package version="0.99.4.20071229-10.3">pm-utils</package>
++      <package version="20071116-44.3">pmtools</package>
++      <package version="0.9-13.16">PolicyKit-doc</package>
++      <package version="0.1_200811250855-1.5">polkit-default-privs</package>
++      <package version="0.10.1-1.4">poppler-tools</package>
++      <package version="1.7-20.1">popt</package>
++      <package version="2.5.5-6.7">postfix</package>
++      <package version="2.4.5.git-2.18">ppp</package>
++      <package version="1.7.2-1.43">pptp</package>
++      <package version="1.3-488.9">prctl</package>
++      <package version="0.2-195.26">preload</package>
++      <package version="18-196.7">procinfo</package>
++      <package version="3.22-238.15">procmail</package>
++      <package version="3.2.7-147.11">procps</package>
++      <package version="2006.11.21-105.9">providers</package>
++      <package version="2.0.7-102.29">pth</package>
++      <package version="3.2.2-2.8">pwdutils</package>
++      <package version="2.15.4-2.28">python-gobject2</package>
++      <package version="3.17.4-1.138">python-qt</package>
++      <package version="4.4.3-1.44">python-qt4</package>
++      <package version="2.1-1.20">python-ReportLab</package>
++      <package version="4.7.7-1.40">python-sip</package>
++      <package version="0.8.4-194.26">pyxml</package>
++      <package version="3.3.8b-87.11">qt3</package>
++      <package version="5.2-141.10">readline-doc</package>
++      <package version="3.6-634.6">recode</package>
++      <package version="3.6.19-116.62">reiserfs</package>
++      <package version="0.1.6+git20080930-5.2">rpcbind</package>
++      <package version="4.4.2.3-20.1">rpm</package>
++      <package version="4.4.2.3-20.1">rpm-python</package>
++      <package version="3.0.4-2.28">rsync</package>
++      <package version="1.0.19-99.1">sane-backends</package>
++      <package version="1.0.19-99.1">sane-backends-autoconfig</package>
++      <package version="3.7-91.86">sash</package>
++      <package version="0.1.0-28.14">scout</package>
++      <package version="1.1.7-1.13">scpm</package>
++      <package version="4.0.2-162.34">screen</package>
++      <package version="4.1.5-85.60">sed</package>
++      <package version="2.17-716.20">setserial</package>
++      <package version="1.27-16.9">sg3_utils</package>
++      <package version="0.51-12.14">shared-mime-info</package>
++      <package version="4.6.3-3.100">sharutils</package>
++      <package version="5.38.0.20081027-1.10">smartmontools</package>
++      <package version="0.93-8.32">smp_utils</package>
++      <package version="2.1.1-9.19">soprano</package>
++      <package version="2.1.1-9.19">soprano-backend-redland</package>
++      <package version="0.3.8-105.15">splashy</package>
++      <package version="0.3.8-105.15">splashy-branding-openSUSE</package>
++      <package version="3.6.4-1.8">sqlite3</package>
++      <package version="0.9-59.61">startup-notification</package>
++      <package version="4.5.18-9.1">strace</package>
++      <package version="0.5.11-39.11">strigi</package>
++      <package version="1.3-13.3">suseRegister</package>
++      <package version="0.80.20081103-1.30">suspend</package>
++      <package version="2.1.0-101.45">sysfsutils</package>
++      <package version="2.0.9-27.3">syslog-ng</package>
++      <package version="1.20-23.5">tar</package>
++      <package version="7.6-855.11">tcpd</package>
++      <package version="3.9.8-1.86">tcpdump</package>
++      <package version="6.15.00-93.3">tcsh</package>
++      <package version="1.2-134.28">telnet</package>
++      <package version="5.6-89.10">terminfo</package>
++      <package version="5.6-89.10">terminfo-base</package>
++      <package version="1.3.9-80.41">tightvnc</package>
++      <package version="1.2-1.12">ulimit</package>
++      <package version="2.2.12-197.17">unixODBC</package>
++      <package version="5.52-141.24">unzip</package>
++      <package version="1.14.19-1.40">update-alternatives</package>
++      <package version="0.73-38.10">usbutils</package>
++      <package version="0.5.5-105.46">utempter</package>
++      <package version="1.41.1-11.9">uuid-runtime</package>
++      <package version="7.2-7.3">vim</package>
++      <package version="1.9-62.74">vlan</package>
++      <package version="0.5.2-128.6">w3m</package>
++      <package version="0.5.2-756.56">wdiff</package>
++      <package version="1.11.4-1.22">wget</package>
++      <package version="30.pre7-2.7">wireless-tools</package>
++      <package version="1.1.8-3.31">wodim</package>
++      <package version="0.7.1-97.57">wol</package>
++      <package version="6-69.87">words</package>
++      <pattern version="11.1">x11</pattern>
++      <package version="0.15.2-5.24">x11-input-synaptics</package>
++      <package version="0.1-167.7">x11-tools</package>
++      <package version="1.5E-407.12">xaw3d</package>
++      <package version="0.2-191.9">xdg-menu</package>
++      <package version="1.0.2-36.61">xdg-utils</package>
++      <package version="0.6-91.119">xdmbgrd</package>
++      <package version="2.3.14-129.28">xinetd</package>
++      <package version="20080807-12.44">xorg-x11-driver-video-unichrome</package>
++      <package version="7.4-1.32">xorg-x11-fonts</package>
++      <package version="7.4-1.32">xorg-x11-fonts-core</package>
++      <package version="7.4-1.23">xorg-x11-libfontenc</package>
++      <package version="7.4-1.24">xorg-x11-libICE</package>
++      <package version="7.4-8.1">xorg-x11-libs</package>
++      <package version="7.4-1.26">xorg-x11-libSM</package>
++      <package version="7.4-1.25">xorg-x11-libX11</package>
++      <package version="7.4-1.36">xorg-x11-libX11-ccache</package>
++      <package version="7.4-1.23">xorg-x11-libXau</package>
++      <package version="7.4-1.23">xorg-x11-libXdmcp</package>
++      <package version="7.4-1.25">xorg-x11-libXext</package>
++      <package version="7.4-1.24">xorg-x11-libXfixes</package>
++      <package version="7.4-1.25">xorg-x11-libxkbfile</package>
++      <package version="7.4-1.26">xorg-x11-libXmu</package>
++      <package version="7.4-1.25">xorg-x11-libXp</package>
++      <package version="7.4-1.27">xorg-x11-libXpm</package>
++      <package version="7.4-1.26">xorg-x11-libXprintUtil</package>
++      <package version="7.4-1.24">xorg-x11-libXrender</package>
++      <package version="7.4-1.26">xorg-x11-libXt</package>
++      <package version="7.4-1.25">xorg-x11-libXv</package>
++      <package version="0.6-95.142">xstroke</package>
++      <package version="0.5.2-255.9">xtermset</package>
++      <package version="3.0-1.47">xvkbd</package>
++      <package version="2.17.11-1.22">yast2-add-on</package>
++      <package version="2.17.4-1.5">yast2-apparmor</package>
++      <package version="2.17.3-1.1">yast2-backup</package>
++      <package version="2.17.0-9.10">yast2-branding-openSUSE</package>
++      <package version="2.17.3-1.8">yast2-control-center</package>
++      <package version="2.17.3-1.8">yast2-control-center-qt</package>
++      <package version="2.17.23-1.7">yast2-core</package>
++      <package version="2.17.29-1.10">yast2-country</package>
++      <package version="2.17.29-1.10">yast2-country-data</package>
++      <package version="2.17.6-1.1">yast2-firewall</package>
++      <package version="2.17.1-1.75">yast2-hardware-detection</package>
++      <package version="2.17.3-1.4">yast2-inetd</package>
++      <package version="2.17.43-1.2">yast2-installation</package>
++      <package version="2.17.2-1.43">yast2-irda</package>
++      <package version="2.17.5-1.2">yast2-iscsi-client</package>
++      <package version="2.17.5-1.31">yast2-kerberos-client</package>
++      <package version="2.17.3-1.73">yast2-ldap</package>
++      <package version="2.17.14-1.23">yast2-libyui</package>
++      <package version="0.8.7-1.72">yast2-metapackage-handler</package>
++      <package version="2.16.1-19.126">yast2-mouse</package>
++      <package version="2.17.11-1.22">yast2-ncurses</package>
++      <package version="2.17.10-1.24">yast2-ncurses-pkg</package>
++      <package version="2.17.9-1.15">yast2-nfs-client</package>
++      <package version="2.17.4-1.19">yast2-nfs-common</package>
++      <package version="2.17.7-1.20">yast2-nis-client</package>
++      <package version="2.17.7-1.28">yast2-ntp-client</package>
++      <package version="2.17.50-1.4">yast2-packager</package>
++      <package version="2.17.1-1.25">yast2-pam</package>
++      <package version="2.17.2-1.38">yast2-perl-bindings</package>
++      <package version="2.17.48-2.5">yast2-printer</package>
++      <package version="2.17.1-1.104">yast2-profile-manager</package>
++      <package version="2.17.23-1.5">yast2-qt</package>
++      <package version="2.17.17-1.1">yast2-registration</package>
++      <package version="2.17.17-1.1">yast2-registration-branding-openSUSE</package>
++      <package version="2.17.7-1.29">yast2-repair</package>
++      <package version="2.16.2-19.123">yast2-restore</package>
++      <package version="2.17.4-1.33">yast2-runlevel</package>
++      <package version="2.17.11-1.30">yast2-samba-client</package>
++      <package version="2.17.5-2.1">yast2-scanner</package>
++      <package version="2.17.12-1.9">yast2-security</package>
++      <package version="2.16.0-1.145">yast2-slp</package>
++      <package version="2.17.13-1.1">yast2-sound</package>
++      <package version="2.17.61-2.1">yast2-storage</package>
++      <package version="2.17.61-2.1">yast2-storage-lib</package>
++      <package version="2.17.2-1.2">yast2-sudo</package>
++      <package version="2.17.0-1.145">yast2-sysconfig</package>
++      <package version="2.17.13-1.3">yast2-theme-openSUSE</package>
++      <package version="2.15.0-2.118">yast2-trans-stats</package>
++      <package version="2.16.1-1.196">yast2-transfer</package>
++      <package version="2.17.6-1.43">yast2-tune</package>
++      <package version="2.17.2-1.56">yast2-tv</package>
++      <package version="2.17.14-1.8">yast2-update</package>
++      <package version="2.17.27-1.2">yast2-users</package>
++      <package version="2.16.8-1.20">yast2-vm</package>
++      <package version="2.17.10-1.9">yast2-x11</package>
++      <package version="2.16.1-1.75">yast2-xml</package>
++      <package version="2.17.11-1.28">yast2-ycp-ui-bindings</package>
++      <package version="2.9-138.7">yp-tools</package>
++      <package version="1.22-1.26">ypbind</package>
++      <package version="2.32-75.9">zip</package>
++      <package version="1.0.6-138.9">zisofs-tools</package>
++      <package version="1.2.3-104.137">zlib</package>
++    </software>
++  </repository>
++  <repository base_url="http://download.opensuse.org/update/11.1" name="openSUSE 11.1 Updates" id="2">
++    <software>
++      <package version="11.1-10007.15.1">aaa_base</package>
++      <package version="2.4.43-2.1.1">attr</package>
++      <package version="0.2.6-142.19.1">audiofile</package>
++      <package version="5.0.3-82.28.1">autofs</package>
++      <package version="9.5.0P2-18.6.1">bind-libs</package>
++      <package version="9.5.0P2-18.6.1">bind-utils</package>
++      <package version="3.2.7-11.3.2">cifs-mount</package>
++      <package version="0.2.10-60.27.1">ConsoleKit</package>
++      <package version="0.2.10-60.27.1">ConsoleKit-x11</package>
++      <package version="1.3.9-7.2.1">cups</package>
++      <package version="1.3.9-7.2.1">cups-client</package>
++      <package version="1.3.9-7.2.1">cups-libs</package>
++      <package version="7.19.0-11.2.2">curl</package>
++      <package version="2.1.22-182.2.1">cyrus-sasl</package>
++      <package version="2.1.22-182.2.1">cyrus-sasl-crammd5</package>
++      <package version="2.1.22-182.2.1">cyrus-sasl-digestmd5</package>
++      <package version="2.1.22-182.2.1">cyrus-sasl-gssapi</package>
++      <package version="2.1.22-182.2.1">cyrus-sasl-plain</package>
++      <package version="1.2.10-5.4.1">dbus-1</package>
++      <package version="0.76-32.33.1">dbus-1-glib</package>
++      <package version="0.83.0-22.22.1">dbus-1-python</package>
++      <package version="1.2.10-5.3.1">dbus-1-x11</package>
++      <package version="11.1-6.4.1">desktop-translations</package>
++      <package version="3.1-437.37.1">dos2unix</package>
++      <package version="1.6.4-152.13.1">enscript</package>
++      <package version="11.1-5.6.1">fetchmsttfonts</package>
++      <package version="3.0.2-269.47.1">foomatic-filters</package>
++      <package version="080721-20.2.1">freeglut</package>
++      <package version="2.3.7-24.2.1">freetype2</package>
++      <package version="8.62-31.43.1">ghostscript-fonts-other</package>
++      <package version="8.62-31.43.1">ghostscript-fonts-std</package>
++      <package version="8.62-31.43.1">ghostscript-library</package>
++      <package version="8.62-31.43.1">ghostscript-omni</package>
++      <package version="8.62-31.43.1">ghostscript-x11</package>
++      <package version="2.18.2-5.2.1">glib2</package>
++      <package version="2.9-2.11.1">glibc</package>
++      <package version="2.9-2.11.1">glibc-locale</package>
++      <package version="2.4.1-24.2.1">gnutls</package>
++      <package version="2.0.9-25.108.1">gpg2</package>
++      <package version="0.10.21-2.21.2">gstreamer-0_10-plugins-base</package>
++      <package version="2.14.4-8.7.1">gtk2</package>
++      <package version="0.5.12-10.13.1">hal</package>
++      <package version="4.1.3-3.8.9">kde4-konsole</package>
++      <package version="4.1.3-4.2.9">kdebase4-runtime</package>
++      <package version="4.1.3-4.10.4">kdelibs4</package>
++      <package version="4.1.3-4.10.4">kdelibs4-core</package>
++      <package version="0.4.8-26.10.1">kpartx</package>
++      <package version="1.6.3-132.5.1">krb5</package>
++      <package version="1.17-44.59.1">lcms</package>
++      <package version="2.4.43-2.1.1">libattr</package>
++      <package version="0.6.23-9.1">libavahi-client3</package>
++      <package version="0.6.23-9.1">libavahi-common3</package>
++      <package version="0.6.23-9.1">libavahi-glib1</package>
++      <package version="4.22-6.1.10">libbluetooth3</package>
++      <package version="7.19.0-11.2.2">libcurl4</package>
++      <package version="0.6.23-9.1">libdns_sd</package>
++      <package version="4.2.7-31.43.1">libgimpprint</package>
++      <package version="2.18.2-5.2.1">libgio-2_0-0</package>
++      <package version="2.18.2-5.2.1">libgio-fam</package>
++      <package version="2.18.2-5.2.1">libglib-2_0-0</package>
++      <package version="2.18.2-5.2.1">libgmodule-2_0-0</package>
++      <package version="2.20.1.1-25.81.1">libgnomecanvas</package>
++      <package version="2.24.0-1.36.2">libgnomeui</package>
++      <package version="2.4.1-24.2.1">libgnutls26</package>
++      <package version="2.18.2-5.2.1">libgobject-2_0-0</package>
++      <package version="2.4.3-3.2.1">libgphoto2</package>
++      <package version="0.10.21-2.21.2">libgstinterfaces-0_10-0</package>
++      <package version="2.18.2-5.2.1">libgthread-2_0-0</package>
++      <package version="4.1.3-4.10.4">libkde4</package>
++      <package version="4.1.3-4.10.4">libkdecore4</package>
++      <package version="1.17-44.59.1">liblcms1</package>
++      <package version="0.11.6-5.2.1">libopensc2</package>
++      <package version="0.9.8h-28.10.1">libopenssl0_9_8</package>
++      <package version="0.9.8-50.1.1">libpcap0</package>
++      <package version="1.2.31-4.38.1">libpng12-0</package>
++      <package version="0.10.1-1.6.10">libpoppler4</package>
++      <package version="0.9.14-2.2.1">libpulse0</package>
++      <package version="2.6.0-2.22.1">libpython2_6-1_0</package>
++      <package version="1.2.9-1.1.1">libqdialogsolver1</package>
++      <package version="4.4.3-4.8.2">libqt4</package>
++      <package version="4.4.3-4.8.2">libqt4-qt3support</package>
++      <package version="4.4.3-4.8.2">libqt4-sql</package>
++      <package version="4.4.3-11.8.1">libqt4-sql-unixODBC</package>
++      <package version="4.4.3-4.8.2">libqt4-x11</package>
++      <package version="4.4.3-4.8.1">libQtWebKit4</package>
++      <package version="3.2.7-11.3.2">libsmbclient0</package>
++      <package version="1.0.17-171.9.1">libsndfile</package>
++      <package version="5.4.2.1-5.2.1">libsnmp15</package>
++      <package version="3.2.7-11.3.2">libtalloc1</package>
++      <package version="3.2.7-11.3.2">libtdb1</package>
++      <package version="3.8.2-133.35.1">libtiff3</package>
++      <package version="128-9.7.1">libvolume_id1</package>
++      <package version="3.2.7-11.3.2">libwbclient0</package>
++      <package version="2.7.1-9.7.1">libxml2</package>
++      <package version="5.30.3-0.1.1">libzypp</package>
++      <package version="3.0-10.9.1">mdadm</package>
++      <package version="7.2-10.3.6">Mesa</package>
++      <package version="3.4-56.10.1">module-init-tools</package>
++      <package version="1.9.0.12-1.1.1">mozilla-xulrunner190</package>
++      <package version="1.9.0.12-1.1.1">mozilla-xulrunner190-gnomevfs</package>
++      <package version="3.0.12-0.1.2">MozillaFirefox</package>
++      <package version="0.4.8-26.10.1">multipath-tools</package>
++      <package version="1.1.3-18.2.1">nfs-client</package>
++      <package version="2.9-2.11.1">nscd</package>
++      <package version="4.2.4p6-2.2.1">ntp</package>
++      <package version="0.11.6-5.2.1">opensc</package>
++      <package version="1.2.0-168.10.1">openslp</package>
++      <package version="0.9.8h-28.10.1">openssl</package>
++      <package version="0.9.8h-25.2.7">openssl-certs</package>
++      <package version="1.22.1-2.12.2">pango</package>
++      <package version="1.8.8-91.8.1">parted</package>
++      <package version="5.10.0-62.18.1">perl</package>
++      <package version="5.10.0-62.18.1">perl-base</package>
++      <package version="0.4.81.1-0.1.1">perl-Bootloader</package>
++      <package version="5.10.0-62.18.1">perl-doc</package>
++      <package version="0.9-13.17.1">PolicyKit</package>
++      <package version="0.2.1-2.1.1">poppler-data</package>
++      <package version="22.6-61.27.1">psmisc</package>
++      <package version="11.1.0.1-1.1">pullin-msttf-fonts</package>
++      <package version="0.9.14-2.2.1">pulseaudio</package>
++      <package version="0.9.14-2.2.1">pulseaudio-esound-compat</package>
++      <package version="0.9.14-2.2.1">pulseaudio-lang</package>
++      <package version="2.6.0-2.21.1">python</package>
++      <package version="2.6.0-2.22.1">python-base</package>
++      <package version="0.13.7-0.1.1">python-satsolver</package>
++      <package version="2.6.0-2.22.1">python-xml</package>
++      <package version="11.1.11-0.1.1">release-notes-openSUSE</package>
++      <package version="0.13.7-0.1.1">satsolver-tools</package>
++      <package version="8.1-542.11.1">sax2</package>
++      <package version="8.1-542.11.1">sax2-gui</package>
++      <package version="8.1-542.11.1">sax2-ident</package>
++      <package version="8.1-542.11.1">sax2-libsax</package>
++      <package version="8.1-542.11.1">sax2-libsax-perl</package>
++      <package version="8.1-542.11.1">sax2-tools</package>
++      <package version="5.4.2.1-5.2.1">snmp-mibs</package>
++      <package version="1.6.9p17-10.36.1">sudo</package>
++      <package version="3.6_SVNr208-1.10.1">SuSEfirewall2</package>
++      <package version="0.71.11-7.4.1">sysconfig</package>
++      <package version="2.86-186.17.1">sysvinit</package>
++      <package version="2009d-0.1.1">timezone</package>
++      <package version="11.1-0.2.1">translation-update</package>
++      <package version="128-9.7.1">udev</package>
++      <package version="2.14.1-10.2.1">util-linux</package>
++      <package version="7.2-7.4.1">vim-base</package>
++      <package version="7.2-7.4.1">vim-data</package>
++      <package version="0.6.4-15.13.1">wpa_supplicant</package>
++      <package version="0.8.1-36.18.2">x11-input-wacom</package>
++      <package version="0.8.1-36.18.2">x11-input-wacom-tools</package>
++      <package version="1.3-32.31.7">xkeyboard-config</package>
++      <package version="7.4-8.19.1">xorg-x11</package>
++      <package version="7.4-11.6.1">xorg-x11-driver-input</package>
++      <package version="7.4-19.8.2">xorg-x11-driver-video</package>
++      <package version="1.2.4_121202_4e89726-2.1.1">xorg-x11-driver-video-radeonhd</package>
++      <package version="7.4-1.29.1">xorg-x11-libxcb</package>
++      <package version="7.4-17.6.1">xorg-x11-server</package>
++      <package version="7.4-8.19.1">xorg-x11-xauth</package>
++      <package version="7.4-17.6.1">xorg-x11-Xvnc</package>
++      <package version="236-1.50.1">xterm</package>
++      <package version="2.17.59-1.2.13">yast2</package>
++      <package version="2.17.59-0.1.1">yast2-bootloader</package>
++      <package version="2.17.21-0.1.1">yast2-ldap-client</package>
++      <package version="2.17.1-1.20.2">yast2-mail</package>
++      <package version="2.17.77-0.1.1">yast2-network</package>
++      <package version="2.17.13-1.2.17">yast2-online-update</package>
++      <package version="2.17.13-1.2.17">yast2-online-update-frontend</package>
++      <package version="2.17.38-0.1.1">yast2-pkg-bindings</package>
++      <package version="2.17.27-0.1.1">yast2-qt-pkg</package>
++      <package version="2.17.9-0.1.2">yast2-samba-server</package>
++    </software>
++  </repository>
++</software_map>
+diff --git a/tests/user/template_set.xml b/tests/user/template_set.xml
+new file mode 100644
+index 0000000..5b21701
+--- /dev/null
++++ b/tests/user/template_set.xml
+@@ -0,0 +1,46 @@
++<template_set>                                                                                                                      
++  <name>default</name>                                                                                                              
++  <description>SUSE default templates</description>                                                                                 
++  <template>                                                                                                                        
++    <appliance_id>1</appliance_id>                                                                                                  
++    <name>openSUSE 11.1, Just enough OS (JeOS)</name>                                                                               
++    <description>Tiny, minimalistic appliances</description>                                                                        
++    <basesystem>11.1</basesystem>                                                                                                   
++  </template>                                                                                                                       
++  <template>                                                                                                                        
++    <appliance_id>2</appliance_id>                                                                                                  
++    <name>openSUSE 11.1, Server</name>                                                                                              
++    <description>A text-only base</description>
++    <basesystem>11.1</basesystem>
++  </template>
++  <template>
++    <appliance_id>3</appliance_id>
++    <name>openSUSE 11.1, Minimal X</name>
++    <description>Graphical system + IceWM</description>
++    <basesystem>11.1</basesystem>
++  </template>
++  <template>
++    <appliance_id>4</appliance_id>
++    <name>openSUSE 11.1, KDE 3 desktop</name>
++    <description>Base system + KDE 3</description>
++    <basesystem>11.1</basesystem>
++  </template>
++  <template>
++    <appliance_id>5</appliance_id>
++    <name>openSUSE 11.1, KDE 4 desktop</name>
++    <description>Base system + KDE 4</description>
++    <basesystem>11.1</basesystem>
++  </template>
++  <template>
++    <appliance_id>6</appliance_id>
++    <name>openSUSE 11.1, GNOME desktop</name>
++    <description>Base system + GNOME</description>
++    <basesystem>11.1</basesystem>
++  </template>
++  <template>
++    <appliance_id>7</appliance_id>
++    <name>Andre's openSUSE 11.1, JeOS</name>
++    <description>Just Enough Operating System for the smallest possible appliance</description>
++    <basesystem>11.1</basesystem>
++  </template>
++</template_set>
+diff --git a/tests/user/template_sets.xml b/tests/user/template_sets.xml
+new file mode 100644
+index 0000000..a916aee
+--- /dev/null
++++ b/tests/user/template_sets.xml
+@@ -0,0 +1,42 @@
++<template_sets>                                                                                            
++  <template_set>                                                                                           
++    <name>default</name>                                                                                   
++    <description>SUSE default templates</description>                                                      
++    <template>                                                                                             
++      <appliance_id>1</appliance_id>                                                                       
++      <name>openSUSE 11.1, Just enough OS (JeOS)</name>                                                    
++      <description>Tiny, minimalistic appliances</description>                                             
++      <basesystem>11.1</basesystem>                                                                        
++    </template>                                                                                            
++    <template>                                                                                             
++      <appliance_id>2</appliance_id>                                                                       
++      <name>openSUSE 11.1, Server</name>                                                                   
++      <description>A text-only base</description>                                                          
++      <basesystem>11.1</basesystem>                                                                        
++    </template>                                                                                            
++    <template>                                                                                             
++      <appliance_id>3</appliance_id>                                                                       
++      <name>openSUSE 11.1, Minimal X</name>                                                                
++      <description>Graphical system + IceWM</description>                                                  
++      <basesystem>11.1</basesystem>                                                                        
++    </template>                                                                                            
++    <template>                                                                                             
++      <appliance_id>4</appliance_id>                                                                       
++      <name>openSUSE 11.1, KDE 3 desktop</name>                                                            
++      <description>Base system + KDE 3</description>                                                       
++      <basesystem>11.1</basesystem>                                                                        
++    </template>                                                                                            
++    <template>                                                                                             
++      <appliance_id>5</appliance_id>                                                                       
++      <name>openSUSE 11.1, KDE 4 desktop</name>                                                            
++      <description>Base system + KDE 4</description>                                                       
++      <basesystem>11.1</basesystem>                                                                        
++    </template>                                                                                            
++    <template>                                                                                             
++      <appliance_id>6</appliance_id>                                                                       
++      <name>openSUSE 11.1, GNOME desktop</name>                                                            
++      <description>Base system + GNOME</description>                                                       
++      <basesystem>11.1</basesystem>                                                                        
++    </template>                                                                                            
++  </template_set>
++</template_sets>
+diff --git a/tests/user/testdrive.xml b/tests/user/testdrive.xml
+new file mode 100644
+index 0000000..ca6c652
+--- /dev/null
++++ b/tests/user/testdrive.xml
+@@ -0,0 +1,13 @@
++<testdrive>
++  <id>1234</id>
++  <state>new</state>
++  <build_id>12345</build_id>
++  <url>http://node52.susestudio.com/testdrive/testdrive/start/11/22/abcdefgh1234567890</url>
++  <server>
++    <vnc>
++      <host>node52.susestudio.com</host>
++      <port>5902</port>
++      <password>1234567890</password>
++    </vnc>
++  </server>
++</testdrive>
+diff --git a/tests/user/testdrives.xml b/tests/user/testdrives.xml
+new file mode 100644
+index 0000000..981ed5d
+--- /dev/null
++++ b/tests/user/testdrives.xml
+@@ -0,0 +1,7 @@
++<testdrives>
++  <testdrive>
++    <id>4</id>
++    <state>running</state>
++    <build_id>22</build_id>
++  </testdrive>
++</testdrives>
+
+From 0c4a85c7c93e134a3d8715519c129160985d801a Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Mon, 23 Jul 2012 14:58:14 +0200
+Subject: [PATCH 21/26] tests for a few user API methods, more to come
+
+
+diff --git a/GNUmakefile b/GNUmakefile
+index 6670c3a..eaa0a23 100644
+--- a/GNUmakefile
++++ b/GNUmakefile
+@@ -1,4 +1,4 @@
+ check:
+-	mocha --compilers coffee:coffee-script tests
++	mocha --recursive --compilers coffee:coffee-script tests
+ 
+ .PHONY: check
+diff --git a/lib/user.coffee b/lib/user.coffee
+new file mode 100644
+index 0000000..e85d8a1
+--- /dev/null
++++ b/lib/user.coffee
+@@ -0,0 +1,50 @@
++fs = require 'fs'
++xml = require './xml'
++
++asis = (parsed) -> parsed
++as_array = (parsed) ->
++    if parsed instanceof Array
++      parsed
++    else
++      [parsed]
++
++roots =
++  appliance_status: 'status'
++
++methods =
++  account: (xo) ->
++    xo.openid_urls = as_array xo.openid_urls.openid_url
++    xo
++
++  appliance: (xo) ->
++    xo.builds = as_array xo.builds.build
++    xo
++
++  appliance_status: (xo) ->
++    xo.issues = as_array xo.issues.issue
++    xo
++
++  appliances: (xo) ->
++    xo = as_array xo.appliance
++    for a in xo
++      a.builds = as_array a.builds.build
++    xo
++
++  build: asis
++
++  builds: (xo) ->
++    xo = as_array xo.build
++    xo
++
++exports.api = (method, args..., done) ->
++  unless methods[method]
++    return done "#{method}: unknown method"
++  else
++    fs.readFile "tests/user/#{method}.xml", (err, data) ->
++      return done err if err
++      xml.parse data, (err, result) ->
++        return done err if err
++        root = roots[method] or method
++        result[root] = methods[method] result[root]
++        done undefined, result
++
+diff --git a/tests/500-user/account.coffee b/tests/500-user/account.coffee
+new file mode 100644
+index 0000000..349a457
+--- /dev/null
++++ b/tests/500-user/account.coffee
+@@ -0,0 +1,24 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives information about the account', (done) ->
++    unapi 'account', (err, r) ->
++      no_error err
++      contains r, account: {
++        username: 'uexample'
++        displayname: 'User Example'
++        email: 'user@example.com'
++        created_at: '2009-05-14 14:51:07 UTC'
++        openid_urls: [
++          'http://user.example.com/'
++        ]
++        disk_quota:
++          available: '15GB'
++          used: '4%'
++      }
++      done()
++
+diff --git a/tests/500-user/appliance.coffee b/tests/500-user/appliance.coffee
+new file mode 100644
+index 0000000..25fd0e6
+--- /dev/null
++++ b/tests/500-user/appliance.coffee
+@@ -0,0 +1,32 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives information about the appliance', (done) ->
++    unapi 'appliance', (err, r) ->
++      no_error err
++      contains r, appliance: {
++        id: '24'
++        name: "Cornelius' JeOS"
++        last_edited: '2009-04-24 12:09:42 UTC'
++        edit_url: 'http://susestudio.com/appliance/edit/24'
++        icon_url: 'http://susestudio.com/api/v1/user/appliance_icon/1234'
++        basesystem: '11.1'
++        parent:
++          id: '1'
++          name: 'openSUSE 11.1, Just enough OS (JeOS)'
++        builds: [
++          {
++            id: '28'
++            version: '0.0.1'
++            image_type: 'oem'
++            image_size: '238'
++            compressed_image_size: '87'
++            download_url: 'http://susestudio.com/download/bf1a0f08884ebac13f30b0fc62dfc44a/Cornelius_JeOS.x86_64-0.0.1.oem.tar.gz'
++          }
++        ]
++      }
++      done()
+diff --git a/tests/500-user/appliance_status.coffee b/tests/500-user/appliance_status.coffee
+new file mode 100644
+index 0000000..abff6cc
+--- /dev/null
++++ b/tests/500-user/appliance_status.coffee
+@@ -0,0 +1,23 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives current state of an appliance', (done) ->
++    unapi 'appliance_status', (err, r) ->
++      no_error err
++      contains r, status:
++        state: 'error'
++        issues: [
++          {
++            type: 'error'
++            text: 'You must include a kernel package in your appliance.'
++            solution:
++              type: 'install'
++              package: 'kernel-default'
++          }
++        ]
++      done()
++
+diff --git a/tests/500-user/appliances.coffee b/tests/500-user/appliances.coffee
+new file mode 100644
+index 0000000..4c50619
+--- /dev/null
++++ b/tests/500-user/appliances.coffee
+@@ -0,0 +1,64 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'lists all appliances of the current user', (done) ->
++    unapi 'appliances', (err, r) ->
++      no_error err
++      contains r, appliances: [
++        {
++          id: '24'
++          name: "Cornelius' JeOS"
++          last_edited: '2009-04-24 12:09:42 UTC'
++          edit_url: 'http://susestudio.com/appliance/edit/24'
++          icon_url: 'http://susestudio.com/api/v1/user/appliance_icon/1234'
++          basesystem: '11.1'
++          parent:
++            id: '1'
++            name: 'openSUSE 11.1, Just enough OS (JeOS)'
++          builds: [
++            {
++              id: '28'
++              version: '0.0.1'
++              image_type: 'oem'
++              image_size: '238'
++              compressed_image_size: '87'
++              download_url: 'http://susestudio.com/download/bf1a0f08884ebac13f30b0fc62dfc44a/Cornelius_JeOS.x86_64-0.0.1.oem.tar.gz'
++            }
++          ]
++        }
++        {
++          id: '8'
++          name: 'Text Only'
++          last_edited: '2009-04-20 14:21:49 UTC'
++          edit_url: 'http://susestudio.com/appliance/edit/8'
++          icon_url: 'http://susestudio.com/api/v1/user/appliance_icon/1234'
++          parent:
++            id: '2'
++            name: 'openSUSE 11.1, Server'
++            basesystem: '11.1'
++          builds: [
++            {
++              id: '26'
++              version: '0.0.3'
++              image_type: 'iso'
++              image_size: '136'
++              compressed_image_size: '0'
++              download_url: 'http://susestudio.com/download/3b8c8785320b147610b8488c837195ac/Text_Only.i686-0.0.3.iso'
++            }
++            {
++              id: '25'
++              version: '0.0.3'
++              image_type: 'oem'
++              image_size: '498'
++              compressed_image_size: '149'
++              download_url: 'http://susestudio.com/download/1e06698c8c88a65d4759a7c24ad26015/Text_Only.i686-0.0.3.oem.tar.gz'
++            }
++          ]
++        }
++      ]
++      done()
++
+diff --git a/tests/500-user/build.coffee b/tests/500-user/build.coffee
+new file mode 100644
+index 0000000..f52ca55
+--- /dev/null
++++ b/tests/500-user/build.coffee
+@@ -0,0 +1,24 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives info for a build', (done) ->
++    unapi 'build', (err, r) ->
++      no_error err
++      contains r, build:
++        id: '28'
++        version: '0.0.1'
++        state: 'finished'
++        expired: 'false'
++        image_type: 'oem'
++        checksum:
++          md5: 'f0071c5f47c892478a8d28b0fe1cfde6'
++          sha1: 'bf988e8a338bd4996be33c840de804126fecfeab'
++        size: '238'
++        compressed_image_size: '87'
++        download_url: 'http://susestudio.com/download/bf1a0f08884ebac13f30b0fc62dfc44a/Cornelius_JeOS.x86_64-0.0.1.oem.tar.gz'
++      done()
++
+diff --git a/tests/500-user/builds.coffee b/tests/500-user/builds.coffee
+new file mode 100644
+index 0000000..4c92f7e
+--- /dev/null
++++ b/tests/500-user/builds.coffee
+@@ -0,0 +1,26 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'lists finished builds for an appliance', (done) ->
++    unapi 'builds', (err, r) ->
++      no_error err
++      contains r, builds: [
++        {
++          id: '28'
++          version: '0.0.1'
++          state: 'finished'
++          expired: 'false'
++          image_type: 'oem'
++          checksum:
++            md5: 'bf1a0f08884ebac13f30b0fc62dfc44a'
++            sha1: 'bf988e8a338bd4996be33c840de804126fecfeab'
++          size: '238'
++          compressed_image_size: '87'
++          download_url: 'http://susestudio.com/download/bf1a0f08884ebac13f30b0fc62dfc44a/Cornelius_JeOS.x86_64-0.0.1.oem.tar.gz'
++        }
++      ]
++      done()
+
+From df251465227269bd724c5bef8c04172d7c40af06 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Tue, 24 Jul 2012 10:30:09 +0200
+Subject: [PATCH 22/26] repositories.xml w/o trailing ws
+
+
+diff --git a/tests/user/repositories.xml b/tests/user/repositories.xml
+index 680bd2a..3d5b09b 100644
+--- a/tests/user/repositories.xml
++++ b/tests/user/repositories.xml
+@@ -1,13 +1,13 @@
+-<repositories>                                                                                                                                                                  
+-  <repository>                                                                                                                                                                  
+-    <id>7</id>                                                                                                                                                                  
+-    <name>Moblin Base</name>                                                                                                                                                    
+-    <type>rpm-md</type>                                                                                                                                                         
+-    <base_system>11.1</base_system>                                                                                                                                             
+-    <base_url>http://download.opensuse.org/repositories/Moblin:/Base/openSUSE_11.1</base_url>                                                                                   
+-    <matches>                                                                                                                                                                   
+-      <repository_name>moblin base</repository_name>                                                                                                                            
+-      <repository_base_url>http://download.opensuse.org/repositories/moblin:/base/opensuse_11.1</repository_base_url>                                                           
+-    </matches>                                                                                                                                                                  
+-  </repository>                                                                                                                                                                 
++<repositories>
++  <repository>
++    <id>7</id>
++    <name>Moblin Base</name>
++    <type>rpm-md</type>
++    <base_system>11.1</base_system>
++    <base_url>http://download.opensuse.org/repositories/Moblin:/Base/openSUSE_11.1</base_url>
++    <matches>
++      <repository_name>moblin base</repository_name>
++      <repository_base_url>http://download.opensuse.org/repositories/moblin:/base/opensuse_11.1</repository_base_url>
++    </matches>
++  </repository>
+ </repositories>
+
+From 85b26cb9c0ae1b10dd81967ad3a541025323fbd4 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Tue, 24 Jul 2012 10:30:55 +0200
+Subject: [PATCH 23/26] configuration.xml: scripts bodies w/o leading ws
+
+
+diff --git a/tests/user/configuration.xml b/tests/user/configuration.xml
+index fcbc617..7afb67f 100644
+--- a/tests/user/configuration.xml
++++ b/tests/user/configuration.xml
+@@ -106,56 +106,56 @@ It provides Linux, Apache, MySQL, and Perl.</description>
+     <build>
+       <enabled>true</enabled>
+       <script>#!/bin/bash -e
+-      #
+-      # This script is executed at the end of appliance creation.  Here you can do
+-      # one-time actions to modify your appliance before it is ever used, like
+-      # removing files and directories to make it smaller, creating symlinks,
+-      # generating indexes, etc.
+-      #
+-      # The 'kiwi_type' variable will contain the format of the appliance (oem =
+-      # disk image, vmx = VMware, iso = CD/DVD, xen = Xen).
+-      #
+-      
+-      # read in some variables
+-      . /studio/profile
+-      
+-      #======================================
+-      # Prune extraneous files
+-      #--------------------------------------
+-      # Remove all documentation
+-      docfiles=`find /usr/share/doc/packages -type f |grep -iv "copying\|license\|copyright"`
+-      rm -f $docfiles
+-      rm -rf /usr/share/info
+-      rm -rf /usr/share/man
+-      
+-      # fix the setlocale error
+-      sed -i 's/en_US.UTF-8/POSIX/g' /etc/sysconfig/language
+-      
+-      exit 0</script>
++#
++# This script is executed at the end of appliance creation.  Here you can do
++# one-time actions to modify your appliance before it is ever used, like
++# removing files and directories to make it smaller, creating symlinks,
++# generating indexes, etc.
++#
++# The 'kiwi_type' variable will contain the format of the appliance (oem =
++# disk image, vmx = VMware, iso = CD/DVD, xen = Xen).
++#
++
++# read in some variables
++. /studio/profile
++
++#======================================
++# Prune extraneous files
++#--------------------------------------
++# Remove all documentation
++docfiles=`find /usr/share/doc/packages -type f |grep -iv "copying\|license\|copyright"`
++rm -f $docfiles
++rm -rf /usr/share/info
++rm -rf /usr/share/man
++
++# fix the setlocale error
++sed -i 's/en_US.UTF-8/POSIX/g' /etc/sysconfig/language
++
++exit 0</script>
+     </build>
+     <boot>
+       <enabled>true</enabled>
+       <script>#!/bin/bash
+-      #
+-      # This script is executed whenever your appliance boots.  Here you can add
+-      # commands to be executed before the system enters the first runlevel.  This
+-      # could include loading kernel modules, starting daemons that aren't managed
+-      # by init files, asking questions at the console, etc.
+-      #
+-      # The 'kiwi_type' variable will contain the format of the appliance (oem =
+-      # disk image, vmx = VMware, iso = CD/DVD, xen = Xen).
+-      #
+-      
+-      # read in some variables
+-      . /studio/profile
+-      
+-      if [ -f /etc/init.d/suse_studio_firstboot ]
+-      then
+-        
+-        # Put commands to be run on the first boot of your appliance here
+-        echo "Running SUSE Studio first boot script..."
+-      
+-      fi</script>
++#
++# This script is executed whenever your appliance boots.  Here you can add
++# commands to be executed before the system enters the first runlevel.  This
++# could include loading kernel modules, starting daemons that aren't managed
++# by init files, asking questions at the console, etc.
++#
++# The 'kiwi_type' variable will contain the format of the appliance (oem =
++# disk image, vmx = VMware, iso = CD/DVD, xen = Xen).
++#
++
++# read in some variables
++. /studio/profile
++
++if [ -f /etc/init.d/suse_studio_firstboot ]
++then
++
++  # Put commands to be run on the first boot of your appliance here
++  echo "Running SUSE Studio first boot script..."
++
++fi</script>
+     </boot>
+     <autoyast>
+       <enabled>false</enabled>
+
+From 261646e87df783012fb453dd404822a1225f08e1 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Tue, 24 Jul 2012 10:39:41 +0200
+Subject: [PATCH 24/26] tests for more user API methods
+
+in fact, the tests so far are not concerned with actual
+API methods (we do not have any implementations yet),
+just the XML -> POJO transformation
+
+diff --git a/lib/user.coffee b/lib/user.coffee
+index e85d8a1..a466a23 100644
+--- a/lib/user.coffee
++++ b/lib/user.coffee
+@@ -9,13 +9,17 @@ as_array = (parsed) ->
+       [parsed]
+ 
+ roots =
++  api_version: 'version'
+   appliance_status: 'status'
++  sharing: 'appliance'
+ 
+ methods =
+   account: (xo) ->
+     xo.openid_urls = as_array xo.openid_urls.openid_url
+     xo
+ 
++  api_version: asis
++
+   appliance: (xo) ->
+     xo.builds = as_array xo.builds.build
+     xo
+@@ -36,6 +40,59 @@ methods =
+     xo = as_array xo.build
+     xo
+ 
++  configuration: (xo) ->
++    xo.tags = as_array xo.tags.tag
++    xo.firewall.open_ports = as_array xo.firewall.open_port
++    delete xo.firewall.open_port
++    xo.users = as_array xo.users.user
++    xo.eulas = as_array xo.eulas.eula
++    xo.databases = as_array xo.databases.database
++    for d in xo.databases
++      d.users = as_array d.users.user
++    xo.autostarts = as_array xo.autostarts.autostart
++    if xo.settings.pae_enabled not instanceof String
++      xo.settings.pae_enabled = 'false'
++    xo.lvm.volumes = as_array xo.lvm.volumes.volume
++    xo
++
++  file: asis
++
++  files: (xo) ->
++    as_array xo.file
++
++  gpg_key: asis
++
++  gpg_keys: (xo) ->
++    as_array xo.gpg_key
++
++  repositories: (xo) ->
++    as_array xo.repository
++
++  repository: asis
++
++  rpm: asis
++
++  rpms: (xo) ->
++    xo.base_system = xo['@'].base_system
++    delete xo['@']
++    xo.rpms = as_array xo.rpm
++    for r in xo.rpms
++      r.base_system = xo.base_system
++    delete xo.rpm
++    xo
++
++  running_build: asis
++
++  running_builds: (xo) ->
++    as_array xo.running_build
++
++  sharing: (xo) ->
++    xo.read_users = as_array xo.read_users.username
++    xo
++
++  software: (xo) ->
++    xo
++
+ exports.api = (method, args..., done) ->
+   unless methods[method]
+     return done "#{method}: unknown method"
+diff --git a/tests/500-user/api_version.coffee b/tests/500-user/api_version.coffee
+new file mode 100644
+index 0000000..387d977
+--- /dev/null
++++ b/tests/500-user/api_version.coffee
+@@ -0,0 +1,13 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives API version', (done) ->
++    unapi 'api_version', (err, r) ->
++      no_error err
++      contains r, version: '1.0'
++      done()
++
+diff --git a/tests/500-user/configuration.coffee b/tests/500-user/configuration.coffee
+new file mode 100644
+index 0000000..c3ee18c
+--- /dev/null
++++ b/tests/500-user/configuration.coffee
+@@ -0,0 +1,282 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API "configuration"', ->
++
++  exp = configuration: { # {{{
++
++    id: '24'
++    name: 'LAMP Server'
++    description: '''This is a LAMP server.
++
++  It provides Linux, Apache, MySQL, and Perl.'''
++    website: 'http://susestudio.com'
++
++    tags: [
++      'lamp'
++      'server'
++    ]
++
++    locale:
++      keyboard_layout: 'english-uk'
++      language: 'en_GB.UTF-8'
++      timezone:
++        location: 'Europe/Berlin'
++
++    network:
++      type: 'manual'
++      hostname: 'lampserver'
++      ip: '192.168.1.100'
++      netmask: '255.255.255.0'
++      route: '192.168.1.1'
++      nameservers: '192.168.1.1, 192.168.1.2'
++
++    firewall:
++      enabled: 'true'
++      open_ports: [
++        'ssh'
++        'http'
++      ]
++
++    users: [
++      {
++        name: 'root'
++        password: 'linux'
++        group: 'root'
++        shell: '/bin/bash'
++        homedir: '/root'
++      }
++      {
++        name: 'tux'
++        password: 'linux'
++        group: 'users'
++        shell: '/bin/bash'
++        homedir: '/home/tux'
++      }
++      {
++        name: 'webdev'
++        password: 'linux1234'
++        group: 'users'
++        shell: '/bin/bash'
++        homedir: '/home/webdev'
++      }
++    ]
++
++    eulas: [
++      'This is an End User License Agreement.\n'
++    ]
++
++    databases: [
++      {
++        type: 'pgsql'
++        users: [
++          {
++            username: 'db_user'
++            password: 'linux'
++            database_list: 'project_db'
++          }
++        ]
++      }
++    ]
++
++    autostarts: [
++      {
++        command: '/usr/bin/someprogram'
++        description: 'Launch "someprogram"'
++        enabled: 'true'
++        user: 'tux'
++      }
++    ]
++
++    settings:
++      memory_size: '512'
++      disk_size: '16'
++      swap_size: '512'
++      pae_enabled: 'false'
++      xen_host_mode_enabled: 'true'
++      cdrom_enabled: 'true'
++      webyast_enabled: 'false'
++      public_clonable: 'true'
++      runlevel: '3'
++      automatic_login: 'tux'
++
++    lvm:
++      enabled: 'true'
++      volume_group: 'systemVG'
++      volumes: [
++        {
++          size: '1000'
++          path: '/'
++        }
++        {
++          size: '100000'
++          path: '/home'
++        }
++      ]
++
++    scripts:
++
++      build:
++        enabled: 'true'
++        script: '''#!/bin/bash -e
++        #
++        # This script is executed at the end of appliance creation.  Here you can do
++        # one-time actions to modify your appliance before it is ever used, like
++        # removing files and directories to make it smaller, creating symlinks,
++        # generating indexes, etc.
++        #
++        # The 'kiwi_type' variable will contain the format of the appliance (oem =
++        # disk image, vmx = VMware, iso = CD/DVD, xen = Xen).
++        #
++        
++        # read in some variables
++        . /studio/profile
++        
++        #======================================
++        # Prune extraneous files
++        #--------------------------------------
++        # Remove all documentation
++        docfiles=`find /usr/share/doc/packages -type f |grep -iv "copying\\|license\\|copyright"`
++        rm -f $docfiles
++        rm -rf /usr/share/info
++        rm -rf /usr/share/man
++        
++        # fix the setlocale error
++        sed -i 's/en_US.UTF-8/POSIX/g' /etc/sysconfig/language
++        
++        exit 0'''
++
++      boot:
++        enabled: 'true'
++        script: '''#!/bin/bash
++        #
++        # This script is executed whenever your appliance boots.  Here you can add
++        # commands to be executed before the system enters the first runlevel.  This
++        # could include loading kernel modules, starting daemons that aren't managed
++        # by init files, asking questions at the console, etc.
++        #
++        # The 'kiwi_type' variable will contain the format of the appliance (oem =
++        # disk image, vmx = VMware, iso = CD/DVD, xen = Xen).
++        #
++        
++        # read in some variables
++        . /studio/profile
++        
++        if [ -f /etc/init.d/suse_studio_firstboot ]
++        then
++        
++          # Put commands to be run on the first boot of your appliance here
++          echo "Running SUSE Studio first boot script..."
++        
++        fi'''
++
++      autoyast:
++        enabled: 'false'
++
++  } # }}}
++
++  it 'includes locale information', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.locale')
++        .deep.equal(exp.configuration.locale)
++      done()
++
++  it 'includes network information', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.network')
++        .deep.equal(exp.configuration.network)
++      done()
++
++  it 'includes firewall information', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.firewall')
++        .deep.equal(exp.configuration.firewall)
++      done()
++
++  it 'includes configured users', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.users')
++        .deep.equal(exp.configuration.users)
++      done()
++
++  it 'includes configured EULAs', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.eulas')
++        .deep.equal(exp.configuration.eulas)
++      done()
++
++  it 'includes database configs', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.databases')
++        .deep.equal(exp.configuration.databases)
++      done()
++
++  it 'includes configured autostart programs', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.autostarts')
++        .deep.equal(exp.configuration.autostarts)
++      done()
++
++  it 'includes basic image settings', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.settings')
++        .deep.equal(exp.configuration.settings)
++      done()
++
++  it 'includes LVM config', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.lvm')
++        .deep.equal(exp.configuration.lvm)
++      done()
++
++  describe 'custom scripts', ->
++    it 'includes custom build script', (done) ->
++      unapi 'configuration', (err, r) ->
++        no_error err
++        (expect r).to.have.deep.property('configuration.scripts.build')
++        (expect r).to.have.deep.property(
++          'configuration.scripts.build.script'
++        , exp.configuration.scripts.build.script
++        )
++        (expect r.configuration.scripts.build).to.deep.equal(
++          exp.configuration.scripts.build
++        )
++        done()
++
++    it 'includes custom boot script', (done) ->
++      unapi 'configuration', (err, r) ->
++        no_error err
++        (expect r).to.have.deep.property('configuration.scripts.boot')
++        (expect r).to.have.deep.property(
++          'configuration.scripts.boot.script'
++        , exp.configuration.scripts.boot.script
++        )
++        (expect r.configuration.scripts.boot).to.deep.equal(
++          exp.configuration.scripts.boot
++        )
++        done()
++
++  it 'includes custom scripts', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      (expect r).to.have.deep.property('configuration.scripts')
++      (expect r.configuration.scripts).to.deep.equal(exp.configuration.scripts)
++      done()
++
++  it 'gives configuration of an appliance', (done) ->
++    unapi 'configuration', (err, r) ->
++      no_error err
++      contains r, exp
++      done()
++
+diff --git a/tests/500-user/file.coffee b/tests/500-user/file.coffee
+new file mode 100644
+index 0000000..f84987d
+--- /dev/null
++++ b/tests/500-user/file.coffee
+@@ -0,0 +1,22 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives metadata for an overlay file', (done) ->
++    unapi 'file', (err, r) ->
++      no_error err
++      contains r, file: {
++        id: '21'
++        filename: 'api.txt'
++        path: '/'
++        owner: 'nobody'
++        group: 'nobody'
++        permissions: '644'
++        enabled: 'true'
++        download_url: 'http://susestudio.com/api/v1/user/files/21/data'
++      }
++      done()
++
+diff --git a/tests/500-user/files.coffee b/tests/500-user/files.coffee
+new file mode 100644
+index 0000000..c341402
+--- /dev/null
++++ b/tests/500-user/files.coffee
+@@ -0,0 +1,34 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives metadata for all overlay files in an appliance', (done) ->
++    unapi 'files', (err, r) ->
++      no_error err
++      contains r, files: [
++        {
++          id: '21'
++          filename: 'api.txt'
++          path: '/'
++          owner: 'nobody'
++          group: 'nobody'
++          permissions: '644'
++          enabled: 'true'
++          download_url: 'http://susestudio.com/api/v1/user/files/21/data'
++        }
++        {
++          id: '22'
++          filename: 'appliances.xml'
++          path: '/'
++          owner: 'nobody'
++          group: 'nobody'
++          permissions: '644'
++          enabled: 'true'
++          download_url: 'http://susestudio.com/api/v1/user/files/22/data'
++        }
++      ]
++      done()
++
+diff --git a/tests/500-user/gpg_key.coffee b/tests/500-user/gpg_key.coffee
+new file mode 100644
+index 0000000..d12584b
+--- /dev/null
++++ b/tests/500-user/gpg_key.coffee
+@@ -0,0 +1,52 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++key = '''
++  -----BEGIN PGP PUBLIC KEY BLOCK-----
++  Version: GnuPG v1.2.1 (GNU/Linux)
++
++  mQGiBEIfIY8RBACIjFavOQNbs4bjTtOblq4X5/oxuTJtv41nfqSFNeUAQke0qoxx
++  AUlBesWxDsOXp5VppgNEA07hGjPvzoxabLAsTccQplvHMNzmRezyukYrSTVR/F7g
++  ywpvlhaAFkL9jZxodXzWKk2cmBLVWvuyzlLEUBeijm2amyEHcIGAczxPawCgmVcM
++  9WpA6SOKivd9qTXK2XP+9BUD/2xV4OR4L7q8CSiaDMwPLo6P6D6VDc9LpVy16Wmu
++  iYPFJIcIpp309biKZhGZgd+gHDhld9EJcZ3A2v43GY/xCdJqZ7Uh5QIGDafnil87
++  2AbMIBYpcOpvAshTM10S3Qj06pIQE47oONZT5A80O/hn+Yd8ySCEswpbWCmtAxnc
++  iNw3A/0Qk/bKrhT6J9Um2JhMfxx/nB80mM+Jlsn58B8i4sjrIVdzc3b45Y2wbXN3
++  uVGuvvAFolAco3cpVy3oY1wMVuh8UlJFNESmxZL/Z7BXyKhiKUZrNxEvQt9OtD1F
++  d36ur8Ky8zFE5GL903Nx/dEVBvIDq2/2K3Wy9Yq3YIC0PW7fkrQlQ2VudE9TLTQg
++  a2V5IDxjZW50b3MtNGtleUBjZW50b3Mub3JnPohfBBMRAgAfBQJCHyGPBQkSzAMA
++  BAsHAwIDFQIDAxYCAQIeAQIXgAAKCRClPQurRD4YISH0AJ9zmx2JPGt8ELKo3aE0
++  YoGg6EYipwCdH3kRVJHQtDeRs/5v5Ghn92XZS4KITAQTEQIADAUCQh8hxAWDEswC
++  ywAKCRA4whYWOWygpCumAJwOseF0mAV+j/0kGrKXf/FKboFScgCdEITVqtB1CCyn
++  +q+IqnCmgEF8rYy5Ag0EQh8hqhAIAKwNu60J+AnfVjNk0eN26sKBQOHFVQX9M3bd
++  NBVWruocb7dro6DG4daPVB66ZI9RqBusll0jz5nUhBO3GZ3rn/KLVhMO2uCtvdcw
++  WYtY6188lO6lOm3aYadIqafcPPiiLnF3zm/E8hI/trbPpaoW1dFBOiSlOY4bSpSC
++  nTuHYd5fjYu77wQhnSsl19XfqwuvHQKW1vhXCaM2GrsLA5tgjLOlJhYJ4yPY2LTo
++  yxoWC/JMMM0Vwi7BaVoa/G2uamC6sL5f6KXei5QftemUvw1uM/2fkLbuHtwETq6Z
++  yUZlsL1H5K5G4h+GDVByBF6Y2P1csi7oXK13sdzhkewLaMjmah8ABAsH/3zhD0Gy
++  1jlMs9dGKSi9kq3jcUE/4o3vvjOPbxqT9psJu0jMEAfUVCWX9BWgZXyE2u+nBxcY
++  AnNyqdmQzs6wTgJWGeGKpyC1jIKtO888RpPShvXtt/aNF4LaoielWZY9xu5oYEhn
++  mBoww3VTbVxFNaPjglZOWnTxWfysHwG0H/dnXMp1sJjfdNsiB7zNniRRurlIiy0x
++  hQSkDLe4tUr9Q9u4ztZKbwVX/fBzJC/u4Smi4VYx+HfOAP3OqzcGKNcb68GpIVo3
++  1RUQq1JqpPSM5U41kW8u+S5n+zhjZsb/Ix3ks18gI8wz5u5yzfGacqp65NLisqVe
++  OKEf/MQ1xWytG4SITAQYEQIADAUCQh8hqgUJEswDAAAKCRClPQurRD4YIXC1AKCF
++  3t5xKJnEXJfgvhvldOzDIFjajwCgkX/MZI0O0SxYQAc2hEQJqCI/LJU=
++  =Qsai
++  -----END PGP PUBLIC KEY BLOCK-----
++  '''
++
++describe 'User API', ->
++
++  it 'gives info for a GPG key', (done) ->
++    unapi 'gpg_key', (err, r) ->
++      no_error err
++      contains r, gpg_key: {
++        id: '27'
++        name: 'test1'
++        target: 'rpm'
++      }
++      (expect r.gpg_key.key).to.include(key)
++      done()
++
+diff --git a/tests/500-user/gpg_keys.coffee b/tests/500-user/gpg_keys.coffee
+new file mode 100644
+index 0000000..2835437
+--- /dev/null
++++ b/tests/500-user/gpg_keys.coffee
+@@ -0,0 +1,54 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++key = '''
++  -----BEGIN PGP PUBLIC KEY BLOCK-----
++  Version: GnuPG v1.2.1 (GNU/Linux)
++
++  mQGiBEIfIY8RBACIjFavOQNbs4bjTtOblq4X5/oxuTJtv41nfqSFNeUAQke0qoxx
++  AUlBesWxDsOXp5VppgNEA07hGjPvzoxabLAsTccQplvHMNzmRezyukYrSTVR/F7g
++  ywpvlhaAFkL9jZxodXzWKk2cmBLVWvuyzlLEUBeijm2amyEHcIGAczxPawCgmVcM
++  9WpA6SOKivd9qTXK2XP+9BUD/2xV4OR4L7q8CSiaDMwPLo6P6D6VDc9LpVy16Wmu
++  iYPFJIcIpp309biKZhGZgd+gHDhld9EJcZ3A2v43GY/xCdJqZ7Uh5QIGDafnil87
++  2AbMIBYpcOpvAshTM10S3Qj06pIQE47oONZT5A80O/hn+Yd8ySCEswpbWCmtAxnc
++  iNw3A/0Qk/bKrhT6J9Um2JhMfxx/nB80mM+Jlsn58B8i4sjrIVdzc3b45Y2wbXN3
++  uVGuvvAFolAco3cpVy3oY1wMVuh8UlJFNESmxZL/Z7BXyKhiKUZrNxEvQt9OtD1F
++  d36ur8Ky8zFE5GL903Nx/dEVBvIDq2/2K3Wy9Yq3YIC0PW7fkrQlQ2VudE9TLTQg
++  a2V5IDxjZW50b3MtNGtleUBjZW50b3Mub3JnPohfBBMRAgAfBQJCHyGPBQkSzAMA
++  BAsHAwIDFQIDAxYCAQIeAQIXgAAKCRClPQurRD4YISH0AJ9zmx2JPGt8ELKo3aE0
++  YoGg6EYipwCdH3kRVJHQtDeRs/5v5Ghn92XZS4KITAQTEQIADAUCQh8hxAWDEswC
++  ywAKCRA4whYWOWygpCumAJwOseF0mAV+j/0kGrKXf/FKboFScgCdEITVqtB1CCyn
++  +q+IqnCmgEF8rYy5Ag0EQh8hqhAIAKwNu60J+AnfVjNk0eN26sKBQOHFVQX9M3bd
++  NBVWruocb7dro6DG4daPVB66ZI9RqBusll0jz5nUhBO3GZ3rn/KLVhMO2uCtvdcw
++  WYtY6188lO6lOm3aYadIqafcPPiiLnF3zm/E8hI/trbPpaoW1dFBOiSlOY4bSpSC
++  nTuHYd5fjYu77wQhnSsl19XfqwuvHQKW1vhXCaM2GrsLA5tgjLOlJhYJ4yPY2LTo
++  yxoWC/JMMM0Vwi7BaVoa/G2uamC6sL5f6KXei5QftemUvw1uM/2fkLbuHtwETq6Z
++  yUZlsL1H5K5G4h+GDVByBF6Y2P1csi7oXK13sdzhkewLaMjmah8ABAsH/3zhD0Gy
++  1jlMs9dGKSi9kq3jcUE/4o3vvjOPbxqT9psJu0jMEAfUVCWX9BWgZXyE2u+nBxcY
++  AnNyqdmQzs6wTgJWGeGKpyC1jIKtO888RpPShvXtt/aNF4LaoielWZY9xu5oYEhn
++  mBoww3VTbVxFNaPjglZOWnTxWfysHwG0H/dnXMp1sJjfdNsiB7zNniRRurlIiy0x
++  hQSkDLe4tUr9Q9u4ztZKbwVX/fBzJC/u4Smi4VYx+HfOAP3OqzcGKNcb68GpIVo3
++  1RUQq1JqpPSM5U41kW8u+S5n+zhjZsb/Ix3ks18gI8wz5u5yzfGacqp65NLisqVe
++  OKEf/MQ1xWytG4SITAQYEQIADAUCQh8hqgUJEswDAAAKCRClPQurRD4YIXC1AKCF
++  3t5xKJnEXJfgvhvldOzDIFjajwCgkX/MZI0O0SxYQAc2hEQJqCI/LJU=
++  =Qsai
++  -----END PGP PUBLIC KEY BLOCK-----
++  '''
++
++describe 'User API', ->
++
++  it 'gives info for a GPG key', (done) ->
++    unapi 'gpg_keys', (err, r) ->
++      no_error err
++      contains r, gpg_keys: [
++        {
++          id: '27'
++          name: 'test1'
++          target: 'rpm'
++        }
++      ]
++      (expect r.gpg_keys[0].key).to.include(key)
++      done()
++
+diff --git a/tests/500-user/repositories.coffee b/tests/500-user/repositories.coffee
+new file mode 100644
+index 0000000..4a2d444
+--- /dev/null
++++ b/tests/500-user/repositories.coffee
+@@ -0,0 +1,25 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives all repositories for an appliance', (done) ->
++    unapi 'repositories', (err, r) ->
++      no_error err
++      contains r, repositories: [
++        {
++          id: '7'
++          name: 'Moblin Base'
++          type: 'rpm-md'
++          base_system: '11.1'
++          base_url: 'http://download.opensuse.org/repositories/Moblin:/Base/openSUSE_11.1'
++          matches: {
++            repository_name: 'moblin base'
++            repository_base_url: 'http://download.opensuse.org/repositories/moblin:/base/opensuse_11.1'
++          }
++        }
++      ]
++      done()
++
+diff --git a/tests/500-user/repository.coffee b/tests/500-user/repository.coffee
+new file mode 100644
+index 0000000..98b4254
+--- /dev/null
++++ b/tests/500-user/repository.coffee
+@@ -0,0 +1,19 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives all repositories for an appliance', (done) ->
++    unapi 'repository', (err, r) ->
++      no_error err
++      contains r, repository: {
++        id: '7'
++        name: 'Moblin Base'
++        type: 'rpm-md'
++        base_system: '11.1'
++        base_url: 'http://download.opensuse.org/repositories/Moblin:/Base/openSUSE_11.1'
++      }
++      done()
++
+diff --git a/tests/500-user/rpm.coffee b/tests/500-user/rpm.coffee
+new file mode 100644
+index 0000000..80ebeae
+--- /dev/null
++++ b/tests/500-user/rpm.coffee
+@@ -0,0 +1,19 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives information about an uploaded rpm', (done) ->
++    unapi 'rpm', (err, r) ->
++      no_error err
++      contains r, rpm: {
++        id: '54'
++        filename: 'fate-1.3.10-14.3.i586.rpm'
++        size: '587500'
++        archive: 'false'
++        base_system: 'SLED11'
++      }
++      done()
++
+diff --git a/tests/500-user/rpms.coffee b/tests/500-user/rpms.coffee
+new file mode 100644
+index 0000000..2e59798
+--- /dev/null
++++ b/tests/500-user/rpms.coffee
+@@ -0,0 +1,24 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives information about all uploaded rpms for a base system', (done) ->
++    unapi 'rpms', (err, r) ->
++      no_error err
++      contains r, rpms: {
++        base_system: 'SLED11'
++        rpms: [
++          {
++            id: '54'
++            filename: 'fate-1.3.10-14.3.i586.rpm'
++            size: '587500'
++            archive: 'false'
++            base_system: 'SLED11'
++          }
++        ]
++      }
++      done()
++
+diff --git a/tests/500-user/running_build.coffee b/tests/500-user/running_build.coffee
+new file mode 100644
+index 0000000..4813444
+--- /dev/null
++++ b/tests/500-user/running_build.coffee
+@@ -0,0 +1,19 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives status of a running build', (done) ->
++    unapi 'running_build', (err, r) ->
++      no_error err
++      contains r, running_build: {
++        id: '38'
++        state: 'running'
++        percent: '0'
++        time_elapsed: '5'
++        message: 'Fetching appliance configuration'
++      }
++      done()
++
+diff --git a/tests/500-user/running_builds.coffee b/tests/500-user/running_builds.coffee
+new file mode 100644
+index 0000000..44d5bed
+--- /dev/null
++++ b/tests/500-user/running_builds.coffee
+@@ -0,0 +1,21 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives status of all running build of an appliance', (done) ->
++    unapi 'running_builds', (err, r) ->
++      no_error err
++      contains r, running_builds: [
++        {
++          id: '38'
++          state: 'running'
++          percent: '0'
++          time_elapsed: '5'
++          message: 'Fetching appliance configuration'
++        }
++      ]
++      done()
++
+diff --git a/tests/500-user/sharing.coffee b/tests/500-user/sharing.coffee
+new file mode 100644
+index 0000000..79bd4ec
+--- /dev/null
++++ b/tests/500-user/sharing.coffee
+@@ -0,0 +1,18 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives users permitted to clone an appliance', (done) ->
++    unapi 'sharing', (err, r) ->
++      no_error err
++      contains r, appliance: {
++        id: '22'
++        read_users: [
++          'steam'
++        ]
++      }
++      done()
++
+diff --git a/tests/500-user/software.coffee b/tests/500-user/software.coffee
+new file mode 100644
+index 0000000..8988e3d
+--- /dev/null
++++ b/tests/500-user/software.coffee
+@@ -0,0 +1,47 @@
++expect = (require 'chai').expect
++unapi = (require '../../lib/user').api
++
++{contains, no_error} = require '../tools'
++
++describe 'User API', ->
++
++  it 'gives all selected packages and patterns of an appliance', (done) ->
++    unapi 'software', (err, r) ->
++      no_error err
++      if 0 then contains r, software: {
++        appliance_id: '42'
++        software: [
++          { type: 'package', name: 'aaa_base' }
++          { type: 'package', name: 'dhcpcd' }
++          { type: 'package', name: 'hwinfo' }
++          { type: 'package', name: 'insserv' }
++          { type: 'package', name: 'kbd' }
++          { type: 'package', name: 'licenses' }
++          { type: 'package', name: 'mkinitrd' }
++          { type: 'package', name: 'module-init-tools' }
++          { type: 'package', name: 'netcfg' }
++          { type: 'package', name: 'openssh' }
++          { type: 'package', name: 'procps' }
++          { type: 'package', name: 'pwdutils' }
++          { type: 'package', name: 'rpm' }
++          { type: 'package', name: 'openSUSE-release' }
++          { type: 'package', name: 'openSUSE-build-key' }
++          { type: 'package', name: 'sysconfig' }
++          { type: 'package', name: 'syslog-ng' }
++          { type: 'package', name: 'grub' }
++          { type: 'package', name: 'branding-openSUSE' }
++          { type: 'package', name: 'rpcbind' }
++          { type: 'package', name: 'PolicyKit' }
++          { type: 'package', name: 'polkit-default-privs' }
++          { type: 'package', name: 'SuSEfirewall2' }
++          { type: 'package', name: 'vim', version: '7.2-7.3' }
++          { type: 'package', name: 'kernel-defualt', version: '2.6.27.7-9.1' }
++          { type: 'pattern', name: 'x11' }
++          { type: 'package', name: 'MozillaFirefox' }
++          { type: 'package', name: 'kde4-yakuake' }
++          { type: 'pattern', name: 'laptop' }
++          { type: 'package', name: 'fate' }
++        ]
++      }
++      done()
++
+
+From 9242d39a8672405226c671380522c682d62be5fe Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Tue, 24 Jul 2012 11:43:28 +0200
+Subject: [PATCH 25/26] common.coffee hosts shared stuff
+
+more of admin.coffee, user.coffee should move here.
+
+diff --git a/lib/admin.coffee b/lib/admin.coffee
+index 74569d5..9464cfe 100644
+--- a/lib/admin.coffee
++++ b/lib/admin.coffee
+@@ -1,10 +1,14 @@
+ fs = require 'fs'
+ xml = require './xml'
++common = require './common'
++
++asis = common.asis
++as_array = common.as_array
+ 
+-asis = (parsed) -> parsed
+ since = (parsed) ->
+   parsed.since = parsed.since['#']
+   parsed
++
+ runners = (parsed, kind) ->
+   unless parsed["#{kind}s"] instanceof Array
+     parsed["#{kind}s"] = [parsed["#{kind}s"][kind]]
+diff --git a/lib/common.coffee b/lib/common.coffee
+new file mode 100644
+index 0000000..788dfd4
+--- /dev/null
++++ b/lib/common.coffee
+@@ -0,0 +1,12 @@
++
++asis = (parsed) -> parsed
++
++as_array = (parsed) ->
++    if parsed instanceof Array
++      parsed
++    else
++      [parsed]
++
++exports.asis = asis
++exports.as_array = as_array
++
+diff --git a/lib/user.coffee b/lib/user.coffee
+index a466a23..0d4037a 100644
+--- a/lib/user.coffee
++++ b/lib/user.coffee
+@@ -1,12 +1,9 @@
+ fs = require 'fs'
+ xml = require './xml'
++common = require './common'
+ 
+-asis = (parsed) -> parsed
+-as_array = (parsed) ->
+-    if parsed instanceof Array
+-      parsed
+-    else
+-      [parsed]
++asis = common.asis
++as_array = common.as_array
+ 
+ roots =
+   api_version: 'version'
+diff --git a/package.json b/package.json
+index 380bdd7..aeba591 100644
+--- a/package.json
++++ b/package.json
+@@ -13,6 +13,8 @@
+ , "files": [
+     "GNUmakefile"
+   , "lib/admin.coffee"
++  , "lib/common.coffee"
++  , "lib/user.coffee"
+   , "lib/index.coffee"
+   , "tests/200-admin.coffee"
+   ]
+
+From 5a667b6384eb06de603aac078295043a999d4401 Mon Sep 17 00:00:00 2001
+From: Roman Neuhauser <rneuhauser@suse.cz>
+Date: Tue, 24 Jul 2012 11:59:41 +0200
+Subject: [PATCH 26/26] admin.api, user.api share their implementation
+
+created by common.api
+
+diff --git a/lib/admin.coffee b/lib/admin.coffee
+index 9464cfe..2c5fa1a 100644
+--- a/lib/admin.coffee
++++ b/lib/admin.coffee
+@@ -1,5 +1,3 @@
+-fs = require 'fs'
+-xml = require './xml'
+ common = require './common'
+ 
+ asis = common.asis
+@@ -14,6 +12,8 @@ runners = (parsed, kind) ->
+     parsed["#{kind}s"] = [parsed["#{kind}s"][kind]]
+   parsed
+ 
++roots = {}
++
+ methods =
+   about: asis
+   active_users: since
+@@ -43,14 +43,4 @@ methods =
+       parsed.disks = (disk for disk in parsed.disks['#'])
+     since parsed
+ 
+-exports.api = (method, args..., done) ->
+-  unless methods[method]
+-    return done "#{method}: unknown method"
+-  else
+-    fs.readFile "tests/admin/#{method}.xml", (err, data) ->
+-      return done err if err
+-      xml.parse data, (err, result) ->
+-        return done err if err
+-        methods[method] result[method]
+-        done undefined, result
+-
++exports.api = common.api 'admin', methods, roots
+diff --git a/lib/common.coffee b/lib/common.coffee
+index 788dfd4..bb87b7c 100644
+--- a/lib/common.coffee
++++ b/lib/common.coffee
+@@ -1,3 +1,5 @@
++fs = require 'fs'
++xml = require './xml'
+ 
+ asis = (parsed) -> parsed
+ 
+@@ -10,3 +12,15 @@ as_array = (parsed) ->
+ exports.asis = asis
+ exports.as_array = as_array
+ 
++exports.api = (dir, methods, roots) -> (method, args..., done) ->
++  unless methods[method]
++    return done "#{method}: unknown method"
++  else
++    fs.readFile "tests/#{dir}/#{method}.xml", (err, data) ->
++      return done err if err
++      xml.parse data, (err, result) ->
++        return done err if err
++        root = roots[method] or method
++        result[root] = methods[method] result[root]
++        done undefined, result
++
+diff --git a/lib/user.coffee b/lib/user.coffee
+index 0d4037a..f32fc35 100644
+--- a/lib/user.coffee
++++ b/lib/user.coffee
+@@ -90,15 +90,4 @@ methods =
+   software: (xo) ->
+     xo
+ 
+-exports.api = (method, args..., done) ->
+-  unless methods[method]
+-    return done "#{method}: unknown method"
+-  else
+-    fs.readFile "tests/user/#{method}.xml", (err, data) ->
+-      return done err if err
+-      xml.parse data, (err, result) ->
+-        return done err if err
+-        root = roots[method] or method
+-        result[root] = methods[method] result[root]
+-        done undefined, result
+-
++exports.api = common.api 'user', methods, roots

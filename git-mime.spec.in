@@ -1,0 +1,38 @@
+# norootforbuild
+# Maintainer: Roman Neuhauser <neuhauser+git-mime@sigpipe.cz>
+
+Name:           git-mime
+Version:        __VERSION__
+Release:        0
+License:        MIT
+Summary:        Prepare patches for email submission
+Url:            https://github.com/roman-neuhauser/%{name}
+Group:          Development/Tools/Version Control
+Source:         %{name}-%{version}.tar.gz
+BuildArch:      noarch
+BuildRequires:  filesystem
+BuildRequires:  zsh
+BuildRoot:      %_tmppath/%name-%version-build
+Requires:       git
+Requires:       zsh
+
+%define gitmime_make  make PREFIX=%{_prefix}
+%description
+Format commits as UNIX mailbox files, convenient for email submission
+or for use with git-am(1).
+
+%prep
+%setup -q
+
+%build
+%gitmime_make
+
+%install
+%gitmime_make install DESTDIR=%{buildroot}
+
+%files
+%defattr(-,root,root)
+%{_bindir}/git-mime
+%{_mandir}/man1/git-mime.1.gz
+
+%changelog

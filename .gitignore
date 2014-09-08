@@ -1,0 +1,8 @@
+.sw?
+.*.sw?
+*.gz
+*.html
+/PKGBUILD
+/git-mime
+/git-mime.spec
+/tests/*.t.err
