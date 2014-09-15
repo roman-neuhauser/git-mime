@@ -37,6 +37,7 @@ test --no-stat
   From: Roman Neuhauser <rneuhauser@suse.cz>
   Date: Wed, 18 Jul 2012 12:26:00 +0200
   Subject: [PATCH] scaffolding: rudimentary package.json for npm, GNUmakefile
+  MIME-Version: 1.0
   
   ---
    create mode 100644 GNUmakefile

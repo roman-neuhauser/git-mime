@@ -14,6 +14,7 @@ BuildRequires:  filesystem
 BuildRequires:  zsh
 BuildRoot:      %_tmppath/%name-%version-build
 Requires:       git
+Requires:       mime-construct
 Requires:       zsh
 
 %define gitmime_make  make PREFIX=%{_prefix}

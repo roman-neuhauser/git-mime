@@ -6,7 +6,7 @@ pkgdesc="Prepare patches for email submission"
 arch=(any)
 url="https://github.com/roman-neuhauser/$pkgname"
 license=(MIT)
-depends=(git zsh)
+depends=(git mime-construct zsh)
 source=($pkgname-$pkgver.tar.gz)
 sha1sums=(SKIP)
 

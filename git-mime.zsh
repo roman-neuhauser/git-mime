@@ -117,12 +117,25 @@ From: %an <%ae>
 Date: %aD
 Subject: [PATCH] %s
 "
-set -A headers "${(@)o_headers}" "${(@f):-$(query-git $hdrsfmt $rhash)}"
-declare body="$(query-git '%b' "$rhash")"
-{
-  print -f '%s\n' -- ${(M)headers:#From *}
-  print -f '%s\n' -- ${headers:#From *}
-  print -f '\n'
+
+declare -a headers fromline
+for hdr in "${(@)o_headers}"; do
+  headers+=(--header "$hdr")
+done
+while read hdr val; do
+  [[ -z $val ]] && continue
+  case $hdr in
+  From)
+    fromline=(--header "From $val")
+    continue
+  ;;
+  esac
+  headers+=(--header "$hdr $val")
+done < <(query-git "$hdrsfmt" $rhash)
+
+declare body="$(query-git '%b' $rhash)"
+
+(
   [[ -n $body ]] && print -f '%s\n' -- $body
   if (( want_stat || want_summary )); then
     print -- ---
@@ -130,4 +143,20 @@ declare body="$(query-git '%b' "$rhash")"
     print
   fi
   git diff-tree --root --no-commit-id "${(@)gdtopts}" --patch "$rhash"
-}
+) \
+| mime-construct --output \
+    "${(@)fromline}" \
+    "${(@)headers}" \
+    --file - \
+| sed -e '
+    # this needs to be `mime-construct --no-banner` or similar
+    /^\(MIME-Version: 1.0\) (mime-construct.*/ {
+      s//\1/
+      p
+      d
+      :rest
+        p
+        n
+        b rest
+    }
+  '

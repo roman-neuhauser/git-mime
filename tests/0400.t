@@ -20,6 +20,8 @@ test
   From: Roman Neuhauser <rneuhauser@suse.cz>
   Date: Wed, 18 Jul 2012 20:07:16 +0200
   Subject: [PATCH] realistic output of numbers from xml responses
+  MIME-Version: 1.0
+  Content-Transfer-Encoding: quoted-printable
   
   real xml parser will not cast numeric strings to numbers,
   so don't do it in the preliminary mock.
