@@ -18,10 +18,16 @@ function query-git # {{{
 declare -r dashless=${${0##*/}/(#s)git-/git }
 declare output=
 declare -a gdtopts; gdtopts=(--stat=72 --summary)
+declare -a o_headers
 declare -i want_stat=1 want_summary=1
 
 while [[ $# -gt 0 && $1 == -* ]]; do # options {{{
   case $1 in
+  --add-header=*)
+                o_headers+=(${1#--add-header=})
+  ;;
+  --add-header) shift; o_headers+=($1)
+  ;;
   --output=*)   output=${1#--output=}
   ;;
   --output)     shift; output=$1
@@ -111,10 +117,12 @@ From: %an <%ae>
 Date: %aD
 Subject: [PATCH] %s
 "
-declare headers="$(query-git "$hdrsfmt" "$rhash")"
+set -A headers "${(@)o_headers}" "${(@f):-$(query-git $hdrsfmt $rhash)}"
 declare body="$(query-git '%b' "$rhash")"
 {
-  print -f '%s\n\n' -- $headers
+  print -f '%s\n' -- ${(M)headers:#From *}
+  print -f '%s\n' -- ${headers:#From *}
+  print -f '\n'
   [[ -n $body ]] && print -f '%s\n' -- $body
   if (( want_stat || want_summary )); then
     print -- ---
