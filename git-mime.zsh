@@ -111,11 +111,13 @@ if [[ -n $output ]]; then
   exec > $tmpout
 fi
 
+declare subjlabel='[PATCH]'
+declare -i hassubjlabel=$(( 0 < ${#subjlabel} ))
 declare -r hdrsfmt="\
 From %H Mon Sep 17 00:00:00 2001
 From: %an <%ae>
 Date: %aD
-Subject: [PATCH] %s
+Subject: %s
 "
 
 declare -a headers fromline
@@ -128,6 +130,9 @@ while read hdr val; do
   From)
     fromline=(--header "From $val")
     continue
+  ;;
+  Subject:)
+    val="${subjlabel:+$subjlabel }$val"
   ;;
   esac
   headers+=(--header "$hdr $val")
